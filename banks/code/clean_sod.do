@@ -3,15 +3,12 @@
 import delimited using "${datadir}/sod_2022.csv", clear
 save "${tempdir}/sod.dta", replace
 
-import delimited using "${datadir}/sod_2022_1.csv", clear
-append using "${tempdir}/sod.dta"
-save "${tempdir}/sod.dta", replace
+* Clean variables
+replace bkmo = 1 - bkmo
+rename bkmo isbranch
 
-import delimited using "${datadir}/sod_2022_2.csv", clear
-append using "${tempdir}/sod_rssdid.dta"
-save "${tempdir}/sod.dta", replace
-
-* Save only list of unique rssdid
+* Branches only
 keep rssdid
-duplicates drop rssdid, force
+gen nbranches = 1
+collapse (sum) nbranches, by(rssdid)
 export delimited using "${tempdir}/sod_rssdid_only.csv", replace
