@@ -8,6 +8,7 @@ class ProjectDirs:
 		self.main = os.path.dirname(self.code)
 		self.temp = os.path.join(self.main, "temp")
 		self.out = os.path.join(self.main, "out")
+		self.data = os.path.join(self.main, "data")
 
 def get_bhc(data, links):
 	"""

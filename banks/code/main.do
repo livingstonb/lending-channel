@@ -1,7 +1,7 @@
 
 
-// global banksdir "~/Library/Mobile Documents/com~apple~CloudDocs/svb_shock/banks"
-global banksdir "C:\Users\akbri\iCloudDrive\svb_shock\banks"
+global banksdir "~/Library/Mobile Documents/com~apple~CloudDocs/svb_shock/banks"
+// global banksdir "C:\Users\akbri\iCloudDrive\svb_shock\banks"
 * global banksdir "${projdir}/banks"
 
 global codedir "${banksdir}/code"
@@ -12,5 +12,5 @@ global outdir "${banksdir}/output"
 cap mkdir "${tempdir}"
 cap mkdir "${outdir}"
 
-do "${codedir}/clean_sod.do"
+do "${codedir}/process_sod.do"
 do "${codedir}/prepare_relationships.do"
