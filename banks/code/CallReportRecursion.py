@@ -8,11 +8,12 @@ Created on Fri Jul 26 11:53:35 2024
 import os
 import aux
 import pandas as pd
+import numpy as np
 
 
 class CallReportRecursion:
 	
-	children = {}
+	children = set()
 	
 	def __init__(self):
 		self.set_directories()
@@ -22,7 +23,13 @@ class CallReportRecursion:
 		dirs = aux.ProjectDirs()
 		callreports = os.path.join(dirs.data, "Call-Reports-06302022")
 		callrcon = os.path.join(callreports, "FFIEC CDR Call Schedule RCO 06302022(1 of 2).txt")
-		self.call = pd.read_csv(callrcon, sep='\t', header=[0,1])
+		self.call = pd.read_table(callrcon, sep='\t', header=0, index_col='IDRSSD')
+		
+		# Replace missings with 0
+		nanvals = pd.isna(self.call.index)
+		index_copy = self.call.index.values
+		index_copy[nanvals] = [0]
+		self.call.index = index_copy.astype('int')
 		
 		# Bank relationships
 		links_path = os.path.join(dirs.temp, "rssdid_links.csv")
@@ -43,13 +50,13 @@ class CallReportRecursion:
 		if (rows.size == 0) | (recursions > 50):
 			return
 		
-		additions = rows['rssdid'].values.to_set()
-		additions -= self.children
+		additions = set(rows['rssdid'].values)
+		additions = additions - self.children
 		
 		if len(additions) == 0:
 			return
 		
-		self.children.add(additions)
+		self.children = self.children.union(additions)
 		
 		for rssdid in additions:
 			self.move_down(rssdid, 1)
@@ -57,8 +64,22 @@ class CallReportRecursion:
 		
 if __name__ == "__main__":
 	cr = CallReportRecursion()
-	cr.search_from_top(2942690)
-	print(cr.children)
+# 	cr.search_from_top(2942690)
+	cr.search_from_top(1039502)
+	
+	
+	for val in cr.children:
+		if val is not None:
+			x1 = cr.call[cr.call.index.values==val]['RCONF049']
+			if x1.size != 0:
+				print(x1)
+			
+			
+
+# 			x2 = x1['RCONF049']
+# 			print(x2)
+	
+# 	print(cr.children)
 # =============================================================================
 # 	ids = [2942690]
 # 	cols = ["RCONF045", "RCONF049"]
