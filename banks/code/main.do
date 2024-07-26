@@ -1,6 +1,7 @@
 
 
-global banksdir "~/Library/Mobile Documents/com~apple~CloudDocs/svb_shock/banks"
+// global banksdir "~/Library/Mobile Documents/com~apple~CloudDocs/svb_shock/banks"
+global banksdir "C:\Users\akbri\iCloudDrive\svb_shock\banks"
 * global banksdir "${projdir}/banks"
 
 global codedir "${banksdir}/code"
