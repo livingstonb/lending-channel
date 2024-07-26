@@ -2,8 +2,17 @@ import pandas as pd
 import numpy as np
 import os
 
+class ProjectDirs:
+	def __init__(self, codedir=os.getcwd()):
+		self.code = codedir
+		self.main = os.path.dirname(self.code)
+		self.temp = os.path.join(self.main, "temp")
+		self.out = os.path.join(self.main, "out")
+
 def get_bhc(data, links):
-	# Input : array-like of rssdid's
+	"""
+	Input : array-like of rssdid's
+	"""
 	zero_col = np.zeros((data.shape[0],1),
 		dtype = np.int32)
 	data['bhc_rssdid'] = zero_col
@@ -21,9 +30,9 @@ def get_bhc(data, links):
 
 
 def move_up(child, links, recursions):
-	####################################################################
-	# Recursively moves up the ownership hierarchy
-	####################################################################
+	"""
+	Recursively moves up the ownership hierarchy
+	"""
 	row = links[links['rssdid'].values == child]
 	recursions += 1
 
