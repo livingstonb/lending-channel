@@ -6,7 +6,7 @@ BHC if applicable, and the name of the BHC
 
 import os
 import pandas as pd
-import aux
+import call_aux
 
 def main(dirs):
 
@@ -16,7 +16,7 @@ def main(dirs):
 	links_path = os.path.join(dirs.temp, "rssdid_links.csv")
 	links = pd.read_csv(links_path)
 
-	return aux.get_bhc(rssdids, links)
+	return call_aux.get_bhc(rssdids, links)
 	
 def statistics(data):
 	z = data.groupby('bhc_rssdid').agg({
@@ -29,7 +29,7 @@ def export(data, dirs):
 	data.to_csv(os.path.join(dirs.temp, 'links.csv'))
 
 if __name__ == "__main__":
-	projdirs = aux.ProjectDirs()
+	projdirs = call_aux.ProjectDirs()
 	data = main(projdirs)
 	export(data, projdirs)
 	statistics(data)

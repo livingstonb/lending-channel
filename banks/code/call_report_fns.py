@@ -6,7 +6,6 @@ Created on Fri Jul 26 11:53:35 2024
 @author: brianlivingston
 """
 
-import aux
 import os
 import pandas as pd
 
@@ -55,7 +54,7 @@ def get_banking_relationships(dirs, date):
 	links_table = pd.read_csv(links_file)
 	links_table = links_table[
 		['#ID_RSSD_PARENT', 'ID_RSSD_OFFSPRING',
-	   'DT_START', 'DT_END', 'PCT_EQUITY']]
+	   'DT_START', 'DT_END', 'PCT_EQUITY', 'CTRL_IND']]
 	
 	# Keep only active relationships at date
 	date_mask = (links_table['DT_START'] < date
@@ -63,7 +62,8 @@ def get_banking_relationships(dirs, date):
 	links_table = links_table[date_mask]
 	
 	# Keep only relationships with > 50% equity ownership
-	links_table = links_table[links_table['PCT_EQUITY'] > 50]
+# 	links_table = links_table[links_table['PCT_EQUITY'] > 50]
+	links_table = links_table[links_table['CTRL_IND'] == 1]
 	links_table.drop(['DT_START', 'DT_END', 'PCT_EQUITY'],
 				  axis=1, inplace=True)
 	

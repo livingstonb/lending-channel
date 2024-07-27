@@ -6,13 +6,13 @@ Created on Fri Jul 26 20:31:44 2024
 @author: brianlivingston
 """
 
-import aux
+import call_aux
 import call_report_fns
 import pandas as pd
 import numpy as np
 
 def start(bhcids):
-	dirs = aux.ProjectDirs()
+	dirs = call_aux.ProjectDirs()
 	
 	call_table = call_report_fns.get_call(dirs)
 	
@@ -46,10 +46,14 @@ if __name__ == "__main__":
 		df = pd.concat([df, matches])
 		
 	variables = {
-		'RCONF045': 'ins_dep_retir',
-		'RCONF049': 'ins_dep_nonretir',
+		'RCONF045': 'dep_retir_lt250k',
+		'RCONF049': 'dep_nonretir_lt250k',
+		'RCON5597': 'est_unins_deposits',
 			  }
 	df.rename(columns=variables, inplace=True)
+	keep = [value for key, value in variables.items()]
+	keep += ['bhc_rssdid']
+	df = df[keep]
 	df.index.name = 'rssdid'
 	 
 	
