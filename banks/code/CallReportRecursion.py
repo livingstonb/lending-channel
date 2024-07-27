@@ -23,7 +23,8 @@ class CallReportRecursion:
 		dirs = aux.ProjectDirs()
 		callreports = os.path.join(dirs.data, "Call-Reports-06302022")
 		callrcon = os.path.join(callreports, "FFIEC CDR Call Schedule RCO 06302022(1 of 2).txt")
-		self.call = pd.read_table(callrcon, sep='\t', header=0, index_col='IDRSSD')
+		self.call = pd.read_table(callrcon, sep='\t', header=0, index_col='IDRSSD',
+							low_memory=False)
 		
 		# Replace missings with 0
 		nanvals = pd.isna(self.call.index)
@@ -37,9 +38,9 @@ class CallReportRecursion:
 		
 	def search_from_top(self, bhcid):
 		recursions = 0
-		self.move_down(bhcid, recursions)
+		return self.move_down(bhcid, recursions)
 		
-	def move_down(self, parent, recursions):
+	def move_down(self, parent, recursions, sel=set()):
 		"""
 		Recursively moves down the ownership hierarchy
 		"""
@@ -48,31 +49,32 @@ class CallReportRecursion:
 		rows = self.links[idx]
 		
 		if (rows.size == 0) | (recursions > 50):
-			return
+			return sel
 		
-		additions = set(rows['rssdid'].values)
-		additions = additions - self.children
+		additions = set(rows['rssdid'].values) - sel
 		
-		if len(additions) == 0:
-			return
-		
-		self.children = self.children.union(additions)
-		
-		for rssdid in additions:
-			self.move_down(rssdid, 1)
-		
+		if len(additions) > 0:
+			sel = sel.union(additions)
+			for rssdid in additions:
+				sel = sel.union(self.move_down(rssdid, 1, sel))
+				
+		return sel	
 		
 if __name__ == "__main__":
 	cr = CallReportRecursion()
 # 	cr.search_from_top(2942690)
-	cr.search_from_top(1039502)
+	x = cr.search_from_top(1039502)
+# 	x = cr.search_from_top(1049341)
+	print(x)
 	
 	
-	for val in cr.children:
-		if val is not None:
-			x1 = cr.call[cr.call.index.values==val]['RCONF049']
-			if x1.size != 0:
-				print(x1)
+# =============================================================================
+# 	for val in cr.children:
+# 		if val is not None:
+# 			x1 = cr.call[cr.call.index.values==val]['RCONF049']
+# 			if x1.size != 0:
+# 				print(x1)
+# =============================================================================
 			
 			
 
