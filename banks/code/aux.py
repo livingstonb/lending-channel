@@ -9,6 +9,15 @@ class ProjectDirs:
 		self.temp = os.path.join(self.main, "temp")
 		self.out = os.path.join(self.main, "out")
 		self.data = os.path.join(self.main, "data")
+		
+	def datapath(self, fname):
+		return os.path.join(self.data, fname)
+	def codepath(self, fname):
+		return os.path.join(self.code, fname)
+	def outpath(self, fname):
+		return os.path.join(self.out, fname)
+	def temppath(self, fname):
+		return os.path.join(self.temp, fname)
 
 def get_bhc(data, links):
 	"""
