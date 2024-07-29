@@ -8,6 +8,7 @@ Created on Fri Jul 26 11:53:35 2024
 
 import os
 import pandas as pd
+import numpy as np
 
 
 def list_bhcids(fname):
@@ -20,7 +21,7 @@ def list_bhcids(fname):
         array of rssdid values of top-tier BHCs
     """
     bhck_table = pd.read_csv(fname, header=0, thousands=',',
-                             index_col='RSSD9001', low_memory=False)
+                             index_col='RSSD9001', low_memory=False, dtype={'RSSD9001': np.int32})
     return bhck_table.index.values
 
 
@@ -41,7 +42,9 @@ def clean_banking_relationships(fname, date):
     # File location
     links_table = pd.read_csv(
         fname, usecols=['#ID_RSSD_PARENT', 'ID_RSSD_OFFSPRING',
-                        'DT_START', 'DT_END', 'PCT_EQUITY'])
+                        'DT_START', 'DT_END', 'PCT_EQUITY'],
+        dtype={'#ID_RSSD_PARENT': 'Int64',
+               'ID_RSSD_OFFSPRING': 'Int64'})
 
     # Keep only active relationships at date
     date_mask = (links_table['DT_START'] < date
@@ -77,16 +80,20 @@ def call_recursion(links, bhcids):
     """
     results = dict()
 
-    df = pd.DataFrame(columns=['rssdid', 'bhcid'])
-    for bhcid in bhcids:
+    for i, bhcid in enumerate(bhcids):
         results[bhcid] = {bhcid}
         recnum = 0
         found = down(bhcid, results[bhcid], links, recnum)
         results[bhcid] = list(results[bhcid].union(found))
 
-        df_bhc = pd.DataFrame(results[bhcid], columns=['rssdid'])
+        df_bhc = pd.DataFrame(results[bhcid], columns=['rssdid'], dtype='Int64')
         df_bhc['bhcid'] = bhcid
-        df = df.merge(df_bhc, how='outer')
+        if i == 0:
+            df = df_bhc
+        else:
+            df = df.merge(df_bhc, how='outer')
+
+    df['bhcid'] = df['bhcid'].astype('Int64')
 
     return df.set_index('rssdid')
 
