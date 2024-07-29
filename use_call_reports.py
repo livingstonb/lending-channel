@@ -1,6 +1,6 @@
 import pandas as pd
 from call_reports import link_rssdids
-
+from sod import sod_fns
 
 def obtain_bhc_banks():
     links, top_tier = link_rssdids.clean_banking_relationships(
@@ -16,8 +16,13 @@ def read_call_reports(fname, bhc_banks):
                     right_index=True)
     return df
 
+def use_sod():
+    df = sod_fns.clean("data/sod_2022.csv")
+    return df
+
 if __name__ == "__main__":
     bhc_banks = obtain_bhc_banks()
     callfile = 'data/call_jun2022.csv'
     df = read_call_reports(callfile, bhc_banks)
-    print(df.head())
+
+    df_sod = use_sod()

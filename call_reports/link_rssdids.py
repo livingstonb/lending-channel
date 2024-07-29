@@ -19,7 +19,7 @@ def list_bhcids(fname):
     Returns:
         array of rssdid values of top-tier BHCs
     """
-    bhck_table = pd.read_csv(fname, header=0,
+    bhck_table = pd.read_csv(fname, header=0, thousands=',',
                              index_col='RSSD9001', low_memory=False)
     return bhck_table.index.values
 
@@ -148,8 +148,8 @@ def get_call(dirs):
     # Loop over files, given quarter
     for key, value in files.items():
         call_file = os.path.join(call_path, key)
-        int_table = pd.read_table(
-            call_file, sep='\t', header=0, index_col='IDRSSD', low_memory=False)
+        int_table = pd.read_table(call_file,
+                                  thousands=',', sep='\t', header=0, index_col='IDRSSD', low_memory=False)
 
         int_table = int_table[value]
 
@@ -165,6 +165,5 @@ def get_call(dirs):
     nanvals = pd.isna(call_table.index)
     index_copy = call_table.index.values
     index_copy[nanvals] = [0]
-    call_table.index = index_copy.astype('int')
 
     return call_table

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 def clean(fname):
-    df = pd.read_csv(fname, header=0, encoding='ISO-8859-1',
+    df = pd.read_csv(fname, header=0, encoding='ISO-8859-1', thousands=',',
                      dtype={'BKMO': np.int32,
                             'RSSDID': np.int32,
                             'RSSDHCR': np.int32})
@@ -11,9 +11,6 @@ def clean(fname):
                  'NAMEHCR', 'RSSDID', 'RSSDHCR']
     df = df[variables]
     df.rename(columns={v: v.lower() for v in variables}, inplace=True)
-
-    for var in ['asset', 'depsum']:
-        df[var] = df[var].str.replace(',', '').astype(int)
 
     df = df.groupby('rssdhcr').agg({
         'nbranch': 'sum',
