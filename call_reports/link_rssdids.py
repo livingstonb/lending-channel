@@ -77,7 +77,7 @@ def call_recursion(links, bhcids):
     """
     results = dict()
 
-    df = pd.DataFrame(columns=['rssdid','bhcid'])
+    df = pd.DataFrame(columns=['rssdid', 'bhcid'])
     for bhcid in bhcids:
         results[bhcid] = {bhcid}
         recnum = 0
