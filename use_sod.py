@@ -1,5 +1,4 @@
-
-from sod import sod_fns
+from banking_procs import sod_fns
 
 
 def use_sod():

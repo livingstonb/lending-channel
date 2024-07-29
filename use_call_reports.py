@@ -1,14 +1,14 @@
 import pandas as pd
-from call_reports import link_rssdids
-from sod import sod_fns
-
+from mod_bank import call_reports
+from mod_bank import sod
 
 def obtain_bhc_banks():
-    links, top_tier = link_rssdids.clean_banking_relationships(
+    links, top_tier = call_reports.clean_banking_relationships(
         'data/bank_relationships.csv', 20220630)
-    bhcids = link_rssdids.list_bhcids('data/bhck-06302022-wrds.csv')
-    tt_bhcids = list(set(top_tier).intersection(set(bhcids)))
-    return link_rssdids.call_recursion(links, tt_bhcids)
+    bhcids = call_reports.list_bhcids('data/bhck-06302022-wrds.csv')
+    # tt_bhcids = list(set(top_tier).intersection(set(bhcids)))
+    tt_bhcids = top_tier
+    return call_reports.call_recursion(links, tt_bhcids)
 
 
 def read_call_reports(fname, bhc_banks):
@@ -19,7 +19,7 @@ def read_call_reports(fname, bhc_banks):
 
 
 def use_sod():
-    df = sod_fns.clean("data/sod_2022.csv")
+    df = sod.clean("data/sod_2022.csv")
     return df
 
 
@@ -29,3 +29,4 @@ if __name__ == "__main__":
     df = read_call_reports(callfile, bhc_banks)
 
     df_sod = use_sod()
+    aggregate = df.groupby('bhcid')[['deposits', 'd_htm_rmbs_gnma', 'd_htm_rmbs_fnma_fhlmc']].agg('sum')
