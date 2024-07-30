@@ -29,4 +29,3 @@ if __name__ == "__main__":
     df = read_call_reports(callfile, bhc_banks)
 
     df_sod = use_sod()
-    aggregate = df.groupby('bhcid')[['deposits', 'd_htm_rmbs_gnma', 'd_htm_rmbs_fnma_fhlmc']].agg('sum')
