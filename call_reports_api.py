@@ -1,12 +1,22 @@
 
 import wrds
 import pandas as pd
-from mod_bank.CRVariables import CRVariables
 
 def request_call_reports():
     conn = wrds.Connection(username='blivingston')
     return conn
 
+
+def variables_by_table(conn):
+    tabnames = ['wrds_call_rcon_1', 'wrds_call_rcon_2',
+                'wrds_call_rcfd_1', 'wrds_call_rcfd_2']
+    tabs = dict()
+    for tabname in tabnames:
+        variables = conn.get_table(library='bank', table=tabname,
+                                   obs=1).columns.values
+        tabs.update({tabname: list(variables)})
+
+    return tabs
 
 def query(conn, vtab, vars):
     tables = ['wrds_call_rcon_1', 'wrds_call_rcon_2',
@@ -31,7 +41,7 @@ def query_one_table(conn, table, vars):
         """select rssd9001, rssd9999, rssd9017, %s
             from bank.%s
             where rssd9001 < 10000
-                and rssd9999 = '20210630 00:00:00'"""%(vstr, table),
+                and rssd9999 = '20221231 00:00:00'"""%(vstr, table),
                          date_cols=['rssd9999'])
     return df
 
@@ -61,10 +71,8 @@ def variables():
 if __name__ == "__main__":
     conn = request_call_reports()
     dates = [20220101, 20230101]
-    callvars = CRVariables(dates)
 
-    callvars.variables_by_table(conn)
-    vtab = callvars.variables_table
+    vtab = variables_by_table(conn)
 
     # Select variables
     vars = variables()
