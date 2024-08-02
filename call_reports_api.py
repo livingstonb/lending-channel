@@ -18,7 +18,7 @@ def variables_by_table(conn):
 
     return tabs
 
-def query(conn, vtab, vars):
+def query(conn, vtab, vars, cates):
     tables = ['wrds_call_rcon_1', 'wrds_call_rcon_2',
               'wrds_call_rcfd_1', 'wrds_call_rcfd_2']
     for i, tab in enumerate(tables):
@@ -27,21 +27,22 @@ def query(conn, vtab, vars):
             continue
 
         if i == 0:
-            qt = query_one_table(conn, tab, v_this_table)
+            qt = query_one_table(conn, tab, v_this_table, dates)
         else:
-            xt = query_one_table(conn, tab, v_this_table)
+            xt = query_one_table(conn, tab, v_this_table, dates)
             icols = ['rssd9001', 'rssd9999']
             qt = qt.merge(xt, how='outer', on=icols)
     return qt
 
 
-def query_one_table(conn, table, vars):
+def query_one_table(conn, table, vars, dates):
     vstr = ', '.join(vars)
+    datestr = f"between '{dates[0]} 00:00:00' and  '{dates[1]} 00:00:00'"
     df = conn.raw_sql(
         """select rssd9001, rssd9999, rssd9017, %s
             from bank.%s
             where rssd9001 < 10000
-                and rssd9999 = '20221231 00:00:00'"""%(vstr, table),
+                and rssd9999 %s"""%(vstr, table, datestr),
                          date_cols=['rssd9999'])
     return df
 
@@ -76,5 +77,5 @@ if __name__ == "__main__":
 
     # Select variables
     vars = variables()
-    q = query(conn, vtab, vars)
+    q = query(conn, vtab, vars, dates)
     q.rename(columns=vars, inplace=True)

@@ -1,8 +1,7 @@
-from banking_procs import sod_fns
-
+from mod_bank import sod
 
 def use_sod():
-    df = sod_fns.clean("data/sod_2022.csv")
+    df = sod.clean("data/sod_2022.csv")
     return df
 
 
