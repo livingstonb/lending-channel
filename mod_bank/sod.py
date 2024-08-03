@@ -10,7 +10,7 @@ def clean(fname):
     variables = ['NBRANCH', 'ASSET', 'DEPSUM',
                  'NAMEHCR', 'RSSDID', 'RSSDHCR']
     df = df[variables]
-    df.rename(columns={v: v.lower() for v in variables}, inplace=True)
+    df = df.rename(columns={v: v.lower() for v in variables})
 
     df = df.groupby('rssdhcr').agg({
         'nbranch': 'sum',
@@ -19,5 +19,5 @@ def clean(fname):
         'namehcr': 'first',
         'rssdid': lambda x: None,
         })
-    df.drop(columns=['rssdid'], inplace=True)
+    df = df.drop(columns=['rssdid'])
     return df

@@ -1,6 +1,8 @@
 
 import wrds
-import pandas as pd
+
+from mod_bank import rssdid
+
 
 def request_call_reports():
     conn = wrds.Connection(username='blivingston')
@@ -48,12 +50,33 @@ def query_one_table(conn, table, vars, dates):
 
 
 def variables():
-    vars = {'rcona555': 'rcon_famsec_le3m',
+    vars = {
+    'rconf045': 'rcon_dep_retir_lt250k',
+    'rconf049': 'rcon_dep_nretir_lt250k',
+    'rcona549': 'rcon_gsec_le3m',
+    'rcona550': 'rcon_gsec_3m1y',
+    'rcona551': 'rcon_gsec_1y3y',
+    'rcona552': 'rcon_gsec_3y5y',
+    'rcona553': 'rcon_gsec_5y15y',
+    'rcona554': 'rcon_gsec_ge15y',
+    'rcona555': 'rcon_famsec_le3m',
     'rcona556': 'rcon_famsec_3m1y',
     'rcona557': 'rcon_famsec_1y3y',
     'rcona558': 'rcon_famsec_3y5y',
     'rcona559': 'rcon_famsec_5y15y',
     'rcona560': 'rcon_famsec_ge15y',
+    'rcona564': 'rcon_flien_le3m',
+    'rcona565': 'rcon_flien_3m1y',
+    'rcona566': 'rcon_flien_1y3y',
+    'rcona567': 'rcon_flien_3y5y',
+    'rcona568': 'rcon_flien_5y15y',
+    'rcona569': 'rcon_flien_ge15y',
+    'rcona570': 'rcon_othll_le3m',
+    'rcona571': 'rcon_othll_3my1y',
+    'rcona572': 'rcon_othll_1y3y',
+    'rcona573': 'rcon_othll_3y5y',
+    'rcona574': 'rcon_othll_5y15y',
+    'rcona575': 'rcon_othll_ge15y',
     'rcon2200': 'rcon_deposits',
     'rcon2170': 'rcon_assets',
     'rconb993': 'rcon_repo_liab_ff',
@@ -71,11 +94,15 @@ def variables():
 
 if __name__ == "__main__":
     conn = request_call_reports()
-    dates = [20220101, 20230101]
+    dates = [20220630, 20220630]
 
     vtab = variables_by_table(conn)
 
     # Select variables
     vars = variables()
     q = query(conn, vtab, vars, dates)
-    q.rename(columns=vars, inplace=True)
+    q = q.rename(columns=vars)
+    df = q.rename(columns={'rssd9001': 'rssdid'})
+    final = rssdid.assign_bhcid(df,
+                            'data/bhck-06302022-wrds.csv', 'data/bank_relationships.csv',
+                            dates[0])

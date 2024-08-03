@@ -3,7 +3,7 @@ import pandas as pd
 
 def links_table(fname, date):
     df = pd.read_csv(fname, header=0)
-    df.rename(columns={'RSSD9001': 'rssdid'}, inplace=True)
+    df = df.rename(columns={'RSSD9001': 'rssdid'})
     df['dt_start'] = pd.to_datetime(df['dt_start'])
     df['dt_end'] = pd.to_datetime(df['dt_end'])
     keep = (df['dt_start'] <= date) & (df['dt_end'] >= date)
