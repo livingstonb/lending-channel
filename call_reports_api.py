@@ -43,8 +43,7 @@ def query_one_table(conn, table, vars, dates):
     df = conn.raw_sql(
         """select rssd9001, rssd9999, rssd9017, %s
             from bank.%s
-            where rssd9001 < 10000
-                and rssd9999 %s"""%(vstr, table, datestr),
+            where  rssd9999 %s"""%(vstr, table, datestr),
                          date_cols=['rssd9999'])
     return df
 
@@ -93,16 +92,23 @@ def variables():
     return vars
 
 if __name__ == "__main__":
-    conn = request_call_reports()
     dates = [20220630, 20220630]
 
-    vtab = variables_by_table(conn)
+    from_file = False
 
-    # Select variables
-    vars = variables()
-    q = query(conn, vtab, vars, dates)
-    q = q.rename(columns=vars)
-    df = q.rename(columns={'rssd9001': 'rssdid'})
+    if from_file:
+        fpath = 'data/call_jun2022.csv'
+        df = pd.read_csv(fpath, header=0, index_col='rssdid')
+    else:
+        conn = request_call_reports()
+
+        vtab = variables_by_table(conn)
+
+        # Select variables
+        vars = variables()
+        q = query(conn, vtab, vars, dates).rename(columns=vars)
+        df = q.rename(columns={'rssd9001': 'rssdid'})
+
     final = rssdid.assign_bhcid(df,
                             'data/bhck-06302022-wrds.csv', 'data/bank_relationships.csv',
                             dates[0])

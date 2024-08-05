@@ -22,10 +22,11 @@ def assign_bhcid(df, bhck_fname, relationships_fname, date):
     top_bhcs = list(set(top_tier).intersection(set(bhcids)))
 
     rssdid_top_bhc_links = get_top_bhc_links(links_table, top_tier)
-    df = pd.merge(df, rssdid_top_bhc_links, how='left', on='rssdid')
+    df = pd.merge(df, rssdid_top_bhc_links,
+                  how='left', on='rssdid').rename(columns={'rssd9999': 'date'})
 
     bhc_fun = np.vectorize(lambda x: np.isin(x, top_bhcs))
-    df['is_bhc'] = bhc_fun(df['parent_rssdid'])
+    df['parent_is_bhc'] = bhc_fun(df['parent_rssdid'])
     return df
 
 def get_bhcids_from_bhck(fname):
@@ -57,8 +58,9 @@ def get_banking_relationships(fname, date):
 
     # File location
     links_table = pd.read_csv(
-        fname, usecols=['#ID_RSSD_PARENT', 'ID_RSSD_OFFSPRING',
-                        'DT_START', 'DT_END', 'PCT_EQUITY'],
+        fname, usecols=['#ID_RSSD_PARENT', 'ID_RSSD_OFFSPRING', 'RELN_LVL',
+                        'DT_START', 'DT_END', 'PCT_EQUITY', 'OTHER_BASIS_IND',
+                        'CTRL_IND'],
         dtype={'#ID_RSSD_PARENT': 'Int64',
                'ID_RSSD_OFFSPRING': 'Int64'})
 
@@ -67,17 +69,18 @@ def get_banking_relationships(fname, date):
                  ) & (links_table['DT_END'] >= date)
     links_table = links_table[date_mask]
 
-    # Keep only relationships with > 50% equity ownership
-    links_table = links_table[links_table['PCT_EQUITY'] > 50]
-    # links_table = links_table[links_table['CTRL_IND'] == 1]
-
-    links_table = links_table.drop(
-        ['DT_START', 'DT_END', 'PCT_EQUITY'], axis=1)
+    # Keep only relationships with > 50% equity ownership, or other control
+    # mask = (links_table['PCT_EQUITY'] > 50) | (
+    #     ('OTHER_BASIS_IND' == 1) & ('RELN_LVL' == 1)
+    # )
+    mask = ('CTRL_IND' == 1)
+    links_table = links_table[mask]
 
     links_table = links_table.rename(columns={
         'ID_RSSD_OFFSPRING': 'rssdid',
         '#ID_RSSD_PARENT': 'parent_rssdid'})
 
+    links_table = links_table[['rssdid', 'parent_rssdid']]
     top_tier = list(set(links_table['parent_rssdid'].values.astype('Int64')
                         ).difference(set(links_table['rssdid'])))
 
