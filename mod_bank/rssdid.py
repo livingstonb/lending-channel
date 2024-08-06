@@ -73,7 +73,7 @@ def get_banking_relationships(fname, date):
     # mask = (links_table['PCT_EQUITY'] > 50) | (
     #     ('OTHER_BASIS_IND' == 1) & ('RELN_LVL' == 1)
     # )
-    mask = ('CTRL_IND' == 1)
+    mask = links_table['CTRL_IND'] == 1
     links_table = links_table[mask]
 
     links_table = links_table.rename(columns={

@@ -1,6 +1,6 @@
 
 import wrds
-
+import pandas as pd
 from mod_bank import rssdid
 
 
@@ -14,34 +14,40 @@ def variables_by_table(conn):
                 'wrds_call_rcfd_1', 'wrds_call_rcfd_2']
     tabs = dict()
     for tabname in tabnames:
-        variables = conn.get_table(library='bank', table=tabname,
-                                   obs=1).columns.values
+        variables = conn.get_table(
+            library='bank', table=tabname, obs=1).columns.values
         tabs.update({tabname: list(variables)})
 
     return tabs
 
-def query(conn, vtab, vars, cates):
+
+def query(conn, vtab, vars, dates):
     tables = ['wrds_call_rcon_1', 'wrds_call_rcon_2',
               'wrds_call_rcfd_1', 'wrds_call_rcfd_2']
-    for i, tab in enumerate(tables):
+    qlist = list()
+    for tab in tables:
         v_this_table = [v for v in vtab[tab] if v in vars]
+
         if len(v_this_table) == 0:
             continue
+        xt = query_one_table(conn, tab, v_this_table, dates)
+        xt = xt.set_index('rssd9001')
+        names = xt['rssd9017']
+        xt = xt.drop('rssd9017', axis=1)
+        qlist.append(xt)
 
-        if i == 0:
-            qt = query_one_table(conn, tab, v_this_table, dates)
-        else:
-            xt = query_one_table(conn, tab, v_this_table, dates)
-            icols = ['rssd9001', 'rssd9999']
-            qt = qt.merge(xt, how='outer', on=icols)
-    return qt
+    qq = pd.concat(qlist, axis=1, join='outer')
+    qq['names'] = names
+    # qq['rssdid'] = qq.index
+
+    return qq
 
 
-def query_one_table(conn, table, vars, dates):
+def query_one_table(conn, table, vars, date):
     vstr = ', '.join(vars)
-    datestr = f"between '{dates[0]} 00:00:00' and  '{dates[1]} 00:00:00'"
+    datestr = f"between '{date} 00:00:00' and  '{date} 00:00:00'"
     df = conn.raw_sql(
-        """select rssd9001, rssd9999, rssd9017, %s
+        """select rssd9001, rssd9017, %s
             from bank.%s
             where  rssd9999 %s"""%(vstr, table, datestr),
                          date_cols=['rssd9999'])
@@ -93,6 +99,7 @@ def variables():
 
 if __name__ == "__main__":
     dates = [20220630, 20220630]
+    date = dates[0]
 
     from_file = False
 
@@ -106,9 +113,11 @@ if __name__ == "__main__":
 
         # Select variables
         vars = variables()
-        q = query(conn, vtab, vars, dates).rename(columns=vars)
-        df = q.rename(columns={'rssd9001': 'rssdid'})
+        q = query(conn, vtab, vars, date).rename(columns=vars)
+        # df = q.rename(columns={'rssd9001': 'rssdid'})
+        df = q
+        df['rssdid'] = q.index.values
 
     final = rssdid.assign_bhcid(df,
                             'data/bhck-06302022-wrds.csv', 'data/bank_relationships.csv',
-                            dates[0])
+                            date)
