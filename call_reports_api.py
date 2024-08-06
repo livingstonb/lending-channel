@@ -1,53 +1,46 @@
 
 import wrds
 import pandas as pd
-from mod_bank import rssdid
-
-
-def request_call_reports():
-    conn = wrds.Connection(username='blivingston')
-    return conn
-
-
-def variables_by_table(conn):
-    tabnames = ['wrds_call_rcon_1', 'wrds_call_rcon_2',
-                'wrds_call_rcfd_1', 'wrds_call_rcfd_2']
-    tabs = dict()
-    for tabname in tabnames:
-        variables = conn.get_table(
-            library='bank', table=tabname, obs=1).columns.values
-        tabs.update({tabname: list(variables)})
-
-    return tabs
+from mod_bank import call_reports
 
 
 def query(conn, vtab, vars, dates):
     tables = ['wrds_call_rcon_1', 'wrds_call_rcon_2',
               'wrds_call_rcfd_1', 'wrds_call_rcfd_2']
-    qlist = list()
+
+    # Loop over call report tables
+    df_tab_list = list()
     for tab in tables:
+        # Selected variables in table "tab"
         v_this_table = [v for v in vtab[tab] if v in vars]
 
         if len(v_this_table) == 0:
             continue
-        xt = query_one_table(conn, tab, v_this_table, dates)
-        xt = xt.set_index('rssd9001')
-        names = xt['rssd9017']
-        xt = xt.drop('rssd9017', axis=1)
-        qlist.append(xt)
 
-    qq = pd.concat(qlist, axis=1, join='outer')
-    qq['names'] = names
-    # qq['rssdid'] = qq.index
+        df_tab = query_one_table(conn, tab, v_this_table, dates)
+        df_tab = df_tab.set_index('rssd9001', drop=True)
+        df_tab.index.name = 'rssdid'
+        dates_names = df_tab[['rssd9999', 'rssd9017']]
+        df_tab = df_tab.drop(['rssd9999', 'rssd9017'], axis=1)
+        df_tab_list.append(df_tab)
 
-    return qq
+    # Concatenate query results from all tables
+    df_out = pd.concat(df_tab_list, axis=1, join='outer')
+
+    # Add back date and institution names
+    colnames = df_out.columns.tolist()
+    df_out[['rssd9999', 'rssd9017']] = dates_names
+    df_out['rssd9001'] = df_out.index.values
+    df_out = df_out[['rssd9001', 'rssd9999', 'rssd9017'] + colnames]
+
+    return df_out
 
 
 def query_one_table(conn, table, vars, date):
     vstr = ', '.join(vars)
     datestr = f"between '{date} 00:00:00' and  '{date} 00:00:00'"
     df = conn.raw_sql(
-        """select rssd9001, rssd9017, %s
+        """select rssd9001, rssd9999, rssd9017, %s
             from bank.%s
             where  rssd9999 %s"""%(vstr, table, datestr),
                          date_cols=['rssd9999'])
@@ -107,17 +100,14 @@ if __name__ == "__main__":
         fpath = 'data/call_jun2022.csv'
         df = pd.read_csv(fpath, header=0, index_col='rssdid')
     else:
-        conn = request_call_reports()
+        conn = call_reports.request_call_reports('blivingston')
 
-        vtab = variables_by_table(conn)
+        vtab = call_reports.variables_by_table(conn)
 
         # Select variables
         vars = variables()
-        q = query(conn, vtab, vars, date).rename(columns=vars)
-        # df = q.rename(columns={'rssd9001': 'rssdid'})
-        df = q
-        df['rssdid'] = q.index.values
+        df = query(conn, vtab, vars, date).rename(columns=vars)
 
-    final = rssdid.assign_bhcid(df,
+    final = call_reports.assign_bhcid(df,
                             'data/bhck-06302022-wrds.csv', 'data/bank_relationships.csv',
-                            date)
+                                      date)
