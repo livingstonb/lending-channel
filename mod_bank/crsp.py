@@ -10,6 +10,9 @@ def links_table(fname, date):
     return df[keep][['rssdid', 'permco']]
 
 
+def index_prices(conn):
+    
+
 if __name__ == "__main__":
     date = pd.to_datetime('2022-03-30')
     df = links_table('data/bank_crsp_links.csv', date)
