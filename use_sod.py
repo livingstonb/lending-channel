@@ -1,7 +1,9 @@
 from mod_bank import sod
 
 def use_sod():
-    df = sod.clean("data/sod_2022.csv")
+    sod_filepath = "data/sod_2022.csv"
+    links_savepath = "temp/sod_bank_bhc_links.csv"
+    df = sod.clean(sod_filepath, links_savepath)
     return df
 
 
