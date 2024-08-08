@@ -2,50 +2,8 @@
 import wrds
 import pandas as pd
 from mod_bank import call_reports
-
-
-def query(conn, vtab, vars, dates):
-    tables = ['wrds_call_rcon_1', 'wrds_call_rcon_2',
-              'wrds_call_rcfd_1', 'wrds_call_rcfd_2']
-
-    # Loop over call report tables
-    df_tab_list = list()
-    for tab in tables:
-        # Selected variables in table "tab"
-        v_this_table = [v for v in vtab[tab] if v in vars]
-
-        if len(v_this_table) == 0:
-            continue
-
-        df_tab = query_one_table(conn, tab, v_this_table, dates)
-        df_tab = df_tab.set_index('rssd9001', drop=True)
-        df_tab.index.name = 'rssdid'
-        dates_names = df_tab[['rssd9999', 'rssd9017']]
-        df_tab = df_tab.drop(['rssd9999', 'rssd9017'], axis=1)
-        df_tab_list.append(df_tab)
-
-    # Concatenate query results from all tables
-    df_out = pd.concat(df_tab_list, axis=1, join='outer')
-
-    # Add back date and institution names
-    colnames = df_out.columns.tolist()
-    df_out[['rssd9999', 'rssd9017']] = dates_names
-    df_out['rssd9001'] = df_out.index.values
-    df_out = df_out[['rssd9001', 'rssd9999', 'rssd9017'] + colnames]
-
-    return df_out
-
-
-def query_one_table(conn, table, vars, date):
-    vstr = ', '.join(vars)
-    datestr = f"between '{date} 00:00:00' and  '{date} 00:00:00'"
-    df = conn.raw_sql(
-        """select rssd9001, rssd9999, rssd9017, %s
-            from bank.%s
-            where  rssd9999 %s"""%(vstr, table, datestr),
-                         date_cols=['rssd9999'])
-    return df
-
+import sys
+import io
 
 def variables():
     vars = {
@@ -91,6 +49,7 @@ def variables():
     return vars
 
 if __name__ == "__main__":
+
     dates = [20220630, 20220630]
     date = dates[0]
 
@@ -100,14 +59,21 @@ if __name__ == "__main__":
         fpath = 'data/call_jun2022.csv'
         df = pd.read_csv(fpath, header=0, index_col='rssdid')
     else:
-        conn = call_reports.request_call_reports('blivingston')
+        # Create a string that will serve as our simulated input
+        test_input = "blivingston\n\nn\n"
 
-        vtab = call_reports.variables_by_table(conn)
+        # Redirect stdin to read from the string
+        sys.stdin = io.StringIO(test_input)
+        cr_query = call_reports.Query('blivingston')
 
         # Select variables
         vars = variables()
-        df = query(conn, vtab, vars, date).rename(columns=vars)
+        cr_query.select_variables(vars.keys())
 
-    final = call_reports.assign_bhcid(df,
-                            'data/bhck-06302022-wrds.csv', 'data/bank_relationships.csv',
-                                      date)
+        df = cr_query.query(date)
+
+        # df = query(conn, vtab, vars, date).rename(columns=vars)
+
+    # final = call_reports.assign_bhcid(df,
+    #                         'data/bhck-06302022-wrds.csv', 'data/bank_relationships.csv',
+    #                                   date)
