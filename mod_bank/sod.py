@@ -23,11 +23,11 @@ def read(fname, include_hcr=True, save_links_path=None):
 
 
 def save_bank_bhc_links(df, save_links_path):
-    links = df[['rssdid', 'rssdhcr']].drop_duplicates()
+    links = df[['rssdid', 'rssdhcr']].drop_duplicates().set_index('rssdid')
     links.to_csv(save_links_path)
 
 
-def aggregate(df):
+def aggregate(df, savepath=None):
     # Aggregate
     df = df.groupby('rssdhcr').agg({
         'nbranch': 'sum',
@@ -40,4 +40,9 @@ def aggregate(df):
     df['depsum'] = df['depsum'] * 1000 / 1e9
     df['asset'] = df['asset'] * 1000 / 1e9
     df['branch_density'] = df['nbranch'] / df['depsum']
+    df.index.name = 'rssdid'
+
+    if savepath is not None:
+        df.to_csv(savepath)
+
     return df
