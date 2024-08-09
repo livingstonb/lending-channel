@@ -1,9 +1,11 @@
 from mod_bank import sod
 
+
 def use_sod():
     sod_filepath = "data/sod_2022.csv"
     links_savepath = "temp/sod_bank_bhc_links.csv"
-    df = sod.clean(sod_filepath, links_savepath)
+    df = sod.read(sod_filepath, links_savepath)
+    df = sod.aggregate(df)
     return df
 
 

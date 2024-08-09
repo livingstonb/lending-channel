@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
 
-def clean(fname, save_links_path=None, include_hcr=True):
+
+def read(fname, include_hcr=True, save_links_path=None):
     df = pd.read_csv(fname, header=0, encoding='ISO-8859-1', thousands=',',
                      dtype={'BKMO': np.int32, 'RSSDID': np.int32, 'RSSDHCR': np.int32})
     if include_hcr:
@@ -15,8 +16,18 @@ def clean(fname, save_links_path=None, include_hcr=True):
     df = df.rename(columns={v: v.lower() for v in variables})
 
     # Optionally saves bank-BHC identifier links
-    save_bank_bhc_links(df, save_links_path)
+    if save_links_path is not None:
+        save_bank_bhc_links(df, save_links_path)
 
+    return df
+
+
+def save_bank_bhc_links(df, save_links_path):
+    links = df[['rssdid', 'rssdhcr']].drop_duplicates()
+    links.to_csv(save_links_path)
+
+
+def aggregate(df):
     # Aggregate
     df = df.groupby('rssdhcr').agg({
         'nbranch': 'sum',
@@ -30,9 +41,3 @@ def clean(fname, save_links_path=None, include_hcr=True):
     df['asset'] = df['asset'] * 1000 / 1e9
     df['branch_density'] = df['nbranch'] / df['depsum']
     return df
-
-
-def save_bank_bhc_links(df, save_links_path):
-    if save_links_path is not None:
-        links = df[['rssdid', 'rssdhcr']].drop_duplicates()
-        links.to_csv(save_links_path)
