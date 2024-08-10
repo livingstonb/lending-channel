@@ -7,6 +7,7 @@ import io
 
 def variables():
     vars = {
+    'rssd9200': 'state',
     'rconf045': 'rcon_dep_retir_lt250k',
     'rconf049': 'rcon_dep_nretir_lt250k',
     'rcona549': 'rcon_gsec_le3m',
@@ -71,8 +72,12 @@ if __name__ == "__main__":
         cr_query.select_variables(vars.keys())
 
         df = cr_query.query(date)
-
-        # df = query(conn, vtab, vars, date).rename(columns=vars)
+        vars.update({
+            'rssd9001': 'rssdid',
+            'rssd9999': 'date',
+            'rssd9017': 'name'
+        })
+        df = df.rename(columns=vars)
 
     # final = call_reports.assign_bhcid(df,
     #                         'data/bhck-06302022-wrds.csv', 'data/bank_relationships.csv',
