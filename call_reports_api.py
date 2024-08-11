@@ -80,5 +80,7 @@ if __name__ == "__main__":
         df = df.rename(columns=vars)
 
     # final = call_reports.assign_bhcid(df,
-    #                         'data/bhck-06302022-wrds.csv', 'data/bank_relationships.csv',
+    #                         'data/bhck-06302022-wrds.csv', 'data/NIC_relationships.csv',
     #                                   date)
+
+    final = call_reports.assign_topid_up(df, 'data/NIC_relationships.csv', 20220630)
