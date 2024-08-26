@@ -22,36 +22,45 @@ class Query(object):
 
     def select_variables(self, selected):
         """
-        Requires a connection to WRDS, and returns a dictionary indicating
-        which variables can be accessed via which BANK tables in WRDS.
+        Requires a connection to WRDS, and sets a dictionary indicating
+        which column names to include for which call report tables
 
         Args:
-            conn: WRDS connection
-
-        Returns:
-            tabs: dictionary with entries {'WRDS table name': [all vars in table]}
+            selected: list of variables (column names) to include in query
         """
         for tabname in self.tabnames:
             tab_variables = self.conn.get_table(
                 library='bank', table=tabname, obs=1).columns.tolist()
+            # Subset of selected variables in tabname
             selected_in_tab = [var for var in selected if var in tab_variables]
             self.variables_by_table.update({tabname: selected_in_tab})
 
     def query(self, date):
+        """
+
+        Args:
+            date: integer date, YYYYMMDD
+
+        Returns:
+            df_out: DataFrame with query of call reports
+        """
+
+        # Query each table separately
         all_queries = list()
         for table_name in self.tabnames:
             variables = self.variables_by_table[table_name]
             if len(variables) == 0:
                 continue
 
+            # Query selected table
             query_this_table = query_one_table(
                 self.conn, table_name, variables, date)
             query_this_table = query_this_table.set_index('rssd9001', drop=True)
             query_this_table.index.name = 'rssdid'
 
             # Save observation date and names for later
-            dates_names = query_this_table[['rssd9999', 'rssd9017']]
-            query_this_table = query_this_table.drop(['rssd9999', 'rssd9017'], axis=1)
+            dates_names = query_this_table[['rssd9999', 'rssd9017', 'rssd9200']]
+            query_this_table = query_this_table.drop(['rssd9999', 'rssd9017', 'rssd9200'], axis=1)
 
             # Store results
             all_queries.append(query_this_table)
@@ -59,22 +68,33 @@ class Query(object):
         # Concatenate query results from all tables
         df_out = pd.concat(all_queries, axis=1, join='outer')
 
-        # Add back date and institution names
+        # Add back date, state, and institution names
         colnames = df_out.columns.tolist()
-        df_out[['rssd9999', 'rssd9017']] = dates_names
+        df_out[['rssd9999', 'rssd9017', 'rssd9200']] = dates_names
         df_out['rssd9001'] = df_out.index.values
-        df_out = df_out[['rssd9001', 'rssd9999', 'rssd9017'] + colnames]
+        df_out = df_out[['rssd9001', 'rssd9999', 'rssd9017', 'rssd9200'] + colnames]
         return df_out
 
 
 def query_one_table(conn, table_name, variables, date):
+    """
+
+    Args:
+        conn: WRDS connection object
+        table_name: name of the call report table being queried in WRDS
+        variables: list of column names to include in query
+        date: integer date, YYYYMMDD
+
+    Returns:
+        query_output: DataFrame with query results
+    """
     # String to pass to SQL for variable selection
     vstr = ', '.join(variables)
     # Date string
     datestr = f"between '{date} 00:00:00' and  '{date} 00:00:00'"
     # SQL query
     query_output = conn.raw_sql(
-        """select rssd9001, rssd9999, rssd9017, %s
+        """select rssd9001, rssd9999, rssd9017, rssd9200, %s
             from bank.%s
             where  rssd9999 %s""" % (vstr, table_name, datestr),
         date_cols=['rssd9999'])

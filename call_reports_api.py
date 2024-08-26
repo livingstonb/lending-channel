@@ -7,7 +7,7 @@ import io
 
 def variables():
     vars = {
-    'rssd9200': 'state',
+    'rcon9224': 'rcon_lei',
     'rconf045': 'rcon_dep_retir_lt250k',
     'rconf049': 'rcon_dep_nretir_lt250k',
     'rcona549': 'rcon_gsec_le3m',
@@ -75,6 +75,7 @@ if __name__ == "__main__":
         vars.update({
             'rssd9001': 'rssdid',
             'rssd9999': 'date',
+            'rssd9200': 'state',
             'rssd9017': 'name'
         })
         df = df.rename(columns=vars)
@@ -83,4 +84,6 @@ if __name__ == "__main__":
     #                         'data/bhck-06302022-wrds.csv', 'data/NIC_relationships.csv',
     #                                   date)
 
-    final = call_reports.assign_topid_up(df, 'data/NIC_relationships.csv', 20220630)
+    bhcids = call_reports.assign_topid_up(df, 'data/NIC_relationships.csv', 20220630)
+    bhcids = bhcids.set_index('rssdid')
+    final = df.drop('rssdid', axis=1).merge(bhcids, how='left', left_index=True, right_index=True)
