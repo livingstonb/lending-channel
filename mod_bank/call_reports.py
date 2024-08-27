@@ -5,6 +5,7 @@ Created on Fri Jul 26 11:53:35 2024
 
 @author: brianlivingston
 """
+import re
 
 import pandas as pd
 import numpy as np
@@ -101,11 +102,11 @@ def query_one_table(conn, table_name, variables, date):
     return query_output
 
 
-def assign_topid_up(df, fname, date):
+def assign_topid_up(df, fname_links, attr_files, date):
     children = df['rssdid'].unique().tolist()
 
     # (parent, child) table and list of top-tier institutions (no parents)
-    links_table = pd.read_csv(fname,
+    links_table = pd.read_csv(fname_links,
                         usecols=['#ID_RSSD_PARENT', 'ID_RSSD_OFFSPRING', 'RELN_LVL',
                                 'DT_START', 'DT_END', 'PCT_EQUITY', 'OTHER_BASIS_IND',
                                 'CTRL_IND', 'EQUITY_IND'],
@@ -123,12 +124,41 @@ def assign_topid_up(df, fname, date):
 
     results = np.full((len(children), 2), -10, dtype=np.int64)
     for i, child in enumerate(children):
-        depth = 0
         parent = move_up(links_table, child)
         results[i, 0] = child
         results[i, 1] = parent
 
     final = pd.DataFrame(results, columns=['rssdid', 'parentid'])
+
+    # Add top-tier name
+    for i, fname_attr in enumerate(attr_files):
+        attr_table = pd.read_csv(fname_attr,
+                                  usecols=['#ID_RSSD', 'NM_LGL', 'DT_OPEN', 'DT_END',
+                                           'BHC_IND', 'CHTR_TYPE_CD', 'CNTRY_CD', 'FHC_IND',
+                                           'ID_LEI', 'ID_RSSD_HD_OFF', 'IHC_IND', 'INSUR_PRI_CD'],
+                                  dtype={'#ID_RSSD': 'Int64',
+                                         'DT_OPEN': 'Int64',
+                                         'DT_END': 'Int64',
+                                         'BHC_IND': 'Int64',
+                                         'CHTR_TYPE_CD': 'Int64',
+                                         'FHC_IND': 'Int64',
+                                         'INSUR_PRI_CD': 'Int64',
+                                         'ID_RSSD_HD_OFF': 'Int64',
+                                         'CNTRY_CD': 'Int64',
+                                         'IHC_IND': 'Int64'})
+        # Keep only active attributes at date
+        date_mask = (attr_table['DT_OPEN'] <= date
+                     ) & (attr_table['DT_END'] >= date)
+        attr_table = attr_table[date_mask].rename(columns={'#ID_RSSD': 'parentid'})
+
+        final = final.merge(attr_table, on='parentid', how='left')
+        if i == 1:
+            colnames = final.columns.values.tolist()
+            for colnm_y in filter(lambda x: x.endswith('_y'), colnames):
+                variable = re.match('(.*)_y',colnm_y).groups()[0]
+                final[variable] = final[colnm_y].fillna(final[variable+'_x'])
+                final = final.drop([colnm_y, variable+'_x'], axis=1)
+
     return final
 
 

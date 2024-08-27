@@ -4,6 +4,7 @@ import pandas as pd
 from mod_bank import call_reports
 import sys
 import io
+import os
 
 def variables():
     vars = {
@@ -49,13 +50,8 @@ def variables():
     }
     return vars
 
-if __name__ == "__main__":
 
-    dates = [20220630, 20220630]
-    date = dates[0]
-
-    from_file = False
-
+def get_quarter(date, from_file=False):
     if from_file:
         fpath = 'data/call_jun2022.csv'
         df = pd.read_csv(fpath, header=0, index_col='rssdid')
@@ -80,10 +76,25 @@ if __name__ == "__main__":
         })
         df = df.rename(columns=vars)
 
-    # final = call_reports.assign_bhcid(df,
-    #                         'data/bhck-06302022-wrds.csv', 'data/NIC_relationships.csv',
-    #                                   date)
-
-    bhcids = call_reports.assign_topid_up(df, 'data/NIC_relationships.csv', 20220630)
+    attr_files = ['data/NIC_attributes_closed.csv', 'data/NIC_attributes_active.csv']
+    bhcids = call_reports.assign_topid_up(df, 'data/NIC_relationships.csv', attr_files, date)
     bhcids = bhcids.set_index('rssdid')
-    final = df.drop('rssdid', axis=1).merge(bhcids, how='left', left_index=True, right_index=True)
+    data_quarter = df.drop('rssdid', axis=1).merge(
+        bhcids, how='left', left_index=True, right_index=True)
+    return data_quarter
+
+
+if __name__ == "__main__":
+
+    dates = [20220331, 20220630, 20220930, 20221231, 20230331]
+    qtables = list()
+    for date in dates:
+        qtables.append(get_quarter(date))
+
+    df = pd.concat(qtables)
+
+    fpath = 'temp'
+    if not os.path.exists(fpath):
+        os.makedirs(fpath)
+
+    df.to_csv(os.path.join('temp', 'bank_data_cleaned.csv'))
