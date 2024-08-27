@@ -86,10 +86,11 @@ def get_quarter(date, from_file=False):
 
 if __name__ == "__main__":
 
-    dates = [20220331, 20220630, 20220930, 20221231, 20230331]
+    dates = [20221231, 20230331]
     qtables = list()
     for date in dates:
-        qtables.append(get_quarter(date))
+        dq = get_quarter(date)
+        qtables.append(dq)
 
     df = pd.concat(qtables)
 

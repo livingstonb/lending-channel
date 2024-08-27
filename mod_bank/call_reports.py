@@ -131,34 +131,42 @@ def assign_topid_up(df, fname_links, attr_files, date):
     final = pd.DataFrame(results, columns=['rssdid', 'parentid'])
 
     # Add top-tier name
-    for i, fname_attr in enumerate(attr_files):
-        attr_table = pd.read_csv(fname_attr,
-                                  usecols=['#ID_RSSD', 'NM_LGL', 'DT_OPEN', 'DT_END',
-                                           'BHC_IND', 'CHTR_TYPE_CD', 'CNTRY_CD', 'FHC_IND',
-                                           'ID_LEI', 'ID_RSSD_HD_OFF', 'IHC_IND', 'INSUR_PRI_CD'],
-                                  dtype={'#ID_RSSD': 'Int64',
-                                         'DT_OPEN': 'Int64',
-                                         'DT_END': 'Int64',
-                                         'BHC_IND': 'Int64',
-                                         'CHTR_TYPE_CD': 'Int64',
-                                         'FHC_IND': 'Int64',
-                                         'INSUR_PRI_CD': 'Int64',
-                                         'ID_RSSD_HD_OFF': 'Int64',
-                                         'CNTRY_CD': 'Int64',
-                                         'IHC_IND': 'Int64'})
-        # Keep only active attributes at date
-        date_mask = (attr_table['DT_OPEN'] <= date
-                     ) & (attr_table['DT_END'] >= date)
-        attr_table = attr_table[date_mask].rename(columns={'#ID_RSSD': 'parentid'})
+    integer_vars = ['#ID_RSSD', 'DT_OPEN', 'DT_END', 'BHC_IND', 'CHTR_TYPE_CD',
+                    'FHC_IND', 'INSUR_PRI_CD', 'ID_RSSD_HD_OFF', 'CNTRY_CD', 'IHC_IND']
+    other_vars = ['ID_LEI', 'NM_LGL']
+    set_ints = {k: 'Int64' for k in integer_vars}
 
-        final = final.merge(attr_table, on='parentid', how='left')
-        if i == 1:
-            colnames = final.columns.values.tolist()
-            for colnm_y in filter(lambda x: x.endswith('_y'), colnames):
-                variable = re.match('(.*)_y',colnm_y).groups()[0]
-                final[variable] = final[colnm_y].fillna(final[variable+'_x'])
-                final = final.drop([colnm_y, variable+'_x'], axis=1)
+    for parent in [True, False]:
+        for i, fname_attr in enumerate(attr_files):
+            attr_table = pd.read_csv(fname_attr,
+                                      usecols=other_vars+integer_vars,
+                                      dtype=set_ints)
+            # Keep only active attributes at date
+            date_mask = (attr_table['DT_OPEN'] <= date
+                         ) & (attr_table['DT_END'] >= date)
 
+            if parent:
+                # Merge for top tier parent
+                attr_table = attr_table[date_mask].rename(columns={'#ID_RSSD': 'parentid'})
+                final = final.merge(attr_table, on='parentid', how='left')
+            else:
+                # Merge for bank
+                attr_table = attr_table[date_mask].rename(columns={'#ID_RSSD': 'rssdid'})
+                final = final.merge(attr_table, on='rssdid', how='left')
+
+            if i == 1:
+                colnames = final.columns.values.tolist()
+                for colnm_y in filter(lambda x: x.endswith('_y'), colnames):
+                    variable = re.match('(.*)_y', colnm_y).groups()[0]
+                    final[variable] = final[colnm_y].fillna(final[variable+'_x'])
+                    final = final.drop([colnm_y, variable+'_x'], axis=1)
+
+        if parent:
+            colnames = {x: 'parent_'+x.lower() for x in other_vars+integer_vars}
+        else:
+            colnames = {x: x.lower() for x in other_vars + integer_vars}
+
+        final = final.rename(columns=colnames)
     return final
 
 

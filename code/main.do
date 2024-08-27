@@ -15,3 +15,9 @@ format %tq qdate
 
 /* Drop global banks */
 keep if missing(rcfd_assets)
+
+/* SAMPLE SELECTION */
+/* Commercial banks (200) and holding companies (500) */
+#delimit ;
+gen bank = inlist(CHTR_TYPE_CD, 200, 500)
+			& inlist(INSUR_PRI_CD, 1, 2, 6, 7);
