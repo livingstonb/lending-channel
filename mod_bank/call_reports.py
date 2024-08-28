@@ -14,7 +14,7 @@ import wrds
 
 class Query(object):
     uname = 'blivingston'
-    tabnames = ['wrds_call_rcon_1', 'wrds_call_rcon_2',
+    tabnames = ['wrds_call_rcon_1', 'wrds_call_rcon_2', 'wrds_call_rcoa_1',
                 'wrds_call_rcfd_1', 'wrds_call_rcfd_2']
     variables_by_table = dict()
 
@@ -132,8 +132,9 @@ def assign_topid_up(df, fname_links, attr_files, date):
 
     # Add top-tier name
     integer_vars = ['#ID_RSSD', 'DT_OPEN', 'DT_END', 'BHC_IND', 'CHTR_TYPE_CD',
-                    'FHC_IND', 'INSUR_PRI_CD', 'ID_RSSD_HD_OFF', 'CNTRY_CD', 'IHC_IND']
-    other_vars = ['ID_LEI', 'NM_LGL']
+                    'FHC_IND', 'INSUR_PRI_CD', 'ID_RSSD_HD_OFF', 'IHC_IND',
+                    'MBR_FHLBS_IND', 'CNTRY_INC_CD']
+    other_vars = ['ID_LEI', 'NM_LGL', 'DOMESTIC_IND']
     set_ints = {k: 'Int64' for k in integer_vars}
 
     for parent in [True, False]:
