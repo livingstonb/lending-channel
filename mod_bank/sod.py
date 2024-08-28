@@ -27,8 +27,9 @@ def save_bank_bhc_links(df, save_links_path):
     links.to_csv(save_links_path)
 
 
-def aggregate(df, savepath=None):
+def aggregate_to_bhc(df, savepath=None):
     # Aggregate
+    df = df[df['rssdhcr'] > 0]
     df = df.groupby('rssdhcr').agg({
         'nbranch': 'sum',
         'asset': 'sum',
@@ -37,6 +38,27 @@ def aggregate(df, savepath=None):
         'rssdid': lambda x: None,
         })
     df = df.drop(columns=['rssdid']).sort_index()
+    df['depsum'] = df['depsum'] * 1000 / 1e9
+    df['asset'] = df['asset'] * 1000 / 1e9
+    df['branch_density'] = df['nbranch'] / df['depsum']
+    df.index.name = 'rssdid'
+
+    if savepath is not None:
+        df.to_csv(savepath)
+
+    return df
+
+
+def aggregate_to_bank(df, savepath=None):
+    # Aggregate
+    df = df.groupby('rssdid').agg({
+        'nbranch': 'sum',
+        'asset': 'sum',
+        'depsum': 'sum',
+        'namehcr': 'first',
+        'rssdhcr': 'first',
+        })
+    df = df.sort_index()
     df['depsum'] = df['depsum'] * 1000 / 1e9
     df['asset'] = df['asset'] * 1000 / 1e9
     df['branch_density'] = df['nbranch'] / df['depsum']

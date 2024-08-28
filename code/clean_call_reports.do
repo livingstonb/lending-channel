@@ -13,20 +13,7 @@ format %td ddate
 gen qdate = qofd(ddate)
 format %tq qdate
 
-/* SAMPLE SELECTION */
-/* Commercial banks (200), holding companies (500) */
 #delimit ;
-gen bank = inlist(chtr_type_cd, 200)
-			& inlist(insur_pri_cd, 1, 2, 6, 7);
-gen domestic = (parent_domestic_ind == "Y") & (domestic_ind == "Y");
-
-keep if bank & domestic;
-drop bank domestic;
-
-drop if assets < 100000; /* Assets < $100m */
-
-
-
 
 /* Use entries consolidated by domestic and foreign branches where possible */
 foreach var of varlist rcfd_* {;
@@ -40,10 +27,36 @@ foreach var of varlist rcon_* {;
 };
 drop rcon_* rcfd_*;
 
+/* SAMPLE SELECTION */
+/* Commercial banks (200), holding companies (500) */
+
+gen bank = inlist(chtr_type_cd, 200)
+			& inlist(insur_pri_cd, 1, 2, 6, 7);
+gen domestic = (parent_domestic_ind == "Y") & (domestic_ind == "Y");
+
+keep if bank & domestic;
+drop bank domestic;
+
+drop if assets < 100000; /* Assets < $100m */
+
+
 /* Cleaning */
 replace id_lei = lei if missing(id_lei);
 drop lei;
 rename id_lei lei;
+
+/* Merge with summary of deposits */
+preserve;
+
+import delimited using "temp/sod_bank_level_2022.csv", clear;
+keep rssdid nbranch branch_density;
+
+tempfile sod_data;
+save "`sod_data'";
+
+restore;
+merge m:1 rssdid using "`sod_data'", keep(1 3) nogen;
+
 
 /*
 quietly sum qdate;
