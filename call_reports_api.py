@@ -47,6 +47,7 @@ def variables():
         'b995': 'repo_liab_oth',
         '3190': 'oth_borr_money',
         '3200': 'sub_debt',
+        '2948': 'total_liab',
         '2213': 'liab_fbk_trans',
         '2236': 'liab_fbk_ntrans',
         '2216': 'liab_foff_trans',
@@ -136,7 +137,7 @@ def get_quarter(date, from_file=False):
 
 if __name__ == "__main__":
 
-    dates = [20220630, 20221231, 20230331, 20230630, 20230930]
+    dates = [20220630, 20220930, 20221231, 20230331, 20230630, 20230930]
     qtables = list()
     for date in dates:
         dq = get_quarter(date)
