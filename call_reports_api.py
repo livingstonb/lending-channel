@@ -5,7 +5,7 @@ import sys
 import io
 import os
 
-def variables():
+def variables(bhck=False):
     vars = {
         '9224': 'lei',
         'f045': 'dep_retir_lt250k',
@@ -47,7 +47,7 @@ def variables():
         'b995': 'repo_liab_oth',
         '3190': 'oth_borr_money',
         '3200': 'sub_debt',
-        '2948': 'total_liab',
+        '2948': 'liabilities',
         '2213': 'liab_fbk_trans',
         '2236': 'liab_fbk_ntrans',
         '2216': 'liab_foff_trans',
@@ -99,10 +99,30 @@ def variables():
     }
     all_vars.update(rcoa)
 
+    if bhck:
+        all_vars = {
+            'bhckjj34': 'htm_securities',
+            'bhck1773': 'afs_debt_securities',
+            'bhckJA22': 'eq_sec_notftrading',
+            'bhck2130': 'inv_unconsol_subsid',
+            'bhck2170': 'assets',
+            'bhdm6631': 'dom_nointerest_deposits',
+            'bhdm6636': 'dom_interest_deposits',
+            'bhfn6631': 'fn_nointerest_deposits',
+            'bhfn6636': 'fn_interest_deposits',
+            'bhckf252': 'fv_deposits',
+            'bhck2948': 'liabilities',
+            'bhckg105': 'equity_capital',
+            'bhck1763': 'dom_ci_loans',
+            'bhck1764': 'fn_ci_loans',
+            'bhckj458': 'unused_lines_to_nbfis',
+            'bhckj454': 'loans_nondep_fi'
+        }
+
     return all_vars
 
 
-def get_quarter(date, from_file=False):
+def get_quarter(date, from_file=False, bhck=False):
     if from_file:
         fpath = 'data/call_jun2022.csv'
         df = pd.read_csv(fpath, header=0, index_col='rssdid')
@@ -112,35 +132,40 @@ def get_quarter(date, from_file=False):
 
         # Redirect stdin to read from the string
         sys.stdin = io.StringIO(test_input)
-        cr_query = call_reports.Query('blivingston')
+        cr_query = call_reports.Query('blivingston', bhck=bhck)
 
         # Select variables
-        vars = variables()
+        vars = variables(bhck)
         cr_query.select_variables(vars.keys())
 
         df = cr_query.query(date)
         vars.update({
             'rssd9001': 'rssdid',
             'rssd9999': 'date',
-            'rssd9200': 'state',
             'rssd9017': 'name'
         })
         df = df.rename(columns=vars)
 
-    attr_files = ['data/NIC_attributes_closed.csv', 'data/NIC_attributes_active.csv']
-    bhcids = call_reports.assign_topid_up(df, 'data/NIC_relationships.csv', attr_files, date)
-    bhcids = bhcids.set_index('rssdid')
-    data_quarter = df.drop('rssdid', axis=1).merge(
-        bhcids, how='left', left_index=True, right_index=True)
+    if bhck:
+        data_quarter = df
+    else:
+        attr_files = ['data/NIC_attributes_closed.csv', 'data/NIC_attributes_active.csv']
+        bhcids = call_reports.assign_topid_up(df, 'data/NIC_relationships.csv', attr_files, date)
+        bhcids = bhcids.set_index('rssdid')
+        data_quarter = df.drop('rssdid', axis=1).merge(
+            bhcids, how='left', left_index=True, right_index=True)
     return data_quarter
 
 
 if __name__ == "__main__":
 
     dates = [20220630, 20220930, 20221231, 20230331, 20230630, 20230930]
+
+    bhck = True
+
     qtables = list()
     for date in dates:
-        dq = get_quarter(date)
+        dq = get_quarter(date, bhck=bhck)
         qtables.append(dq)
 
     df = pd.concat(qtables)
@@ -149,4 +174,8 @@ if __name__ == "__main__":
     if not os.path.exists(fpath):
         os.makedirs(fpath)
 
-    df.to_csv(os.path.join('temp', 'bank_data_cleaned.csv'))
+    if bhck:
+        pathname = 'bhck_data_cleaned.csv'
+    else:
+        pathname = 'bank_data_cleaned.csv'
+    df.to_csv(os.path.join('temp', pathname))

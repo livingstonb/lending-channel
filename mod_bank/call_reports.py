@@ -14,12 +14,16 @@ import wrds
 
 class Query(object):
     uname = 'blivingston'
-    tabnames = ['wrds_call_rcon_1', 'wrds_call_rcon_2', 'wrds_call_rcoa_1',
-                'wrds_call_rcfd_1', 'wrds_call_rcfd_2']
+    tabnames = ['wrds_call_rcon_1', 'wrds_call_rcon_2', 'wrds_call_rcfd_1', 'wrds_call_rcfd_2',
+                'wrds_call_rcoa_1']
     variables_by_table = dict()
 
-    def __init__(self, uname):
+    def __init__(self, uname, bhck=False):
         self.conn = wrds.Connection(username=uname)
+        self.bhck = bhck
+        if bhck:
+            self.tabnames = ['wrds_holding_bhck_1', 'wrds_holding_bhck_2',
+                             'wrds_holding_other_1']
 
     def select_variables(self, selected):
         """
@@ -46,6 +50,9 @@ class Query(object):
             df_out: DataFrame with query of call reports
         """
 
+        # Variables that show up in multiple tables (don't want merge issues)
+        common_vars = ['rssd9999', 'rssd9017']
+
         # Query each table separately
         all_queries = list()
         for table_name in self.tabnames:
@@ -60,8 +67,8 @@ class Query(object):
             query_this_table.index.name = 'rssdid'
 
             # Save observation date and names for later
-            dates_names = query_this_table[['rssd9999', 'rssd9017', 'rssd9200']]
-            query_this_table = query_this_table.drop(['rssd9999', 'rssd9017', 'rssd9200'], axis=1)
+            dates_names = query_this_table[common_vars]
+            query_this_table = query_this_table.drop(common_vars, axis=1)
 
             # Store results
             all_queries.append(query_this_table)
@@ -71,9 +78,9 @@ class Query(object):
 
         # Add back date, state, and institution names
         colnames = df_out.columns.tolist()
-        df_out[['rssd9999', 'rssd9017', 'rssd9200']] = dates_names
+        df_out[common_vars] = dates_names
         df_out['rssd9001'] = df_out.index.values
-        df_out = df_out[['rssd9001', 'rssd9999', 'rssd9017', 'rssd9200'] + colnames]
+        df_out = df_out[['rssd9001'] + common_vars + colnames]
         return df_out
 
 
@@ -91,11 +98,12 @@ def query_one_table(conn, table_name, variables, date):
     """
     # String to pass to SQL for variable selection
     vstr = ', '.join(variables)
+
     # Date string
     datestr = f"between '{date} 00:00:00' and  '{date} 00:00:00'"
     # SQL query
     query_output = conn.raw_sql(
-        """select rssd9001, rssd9999, rssd9017, rssd9200, %s
+        """select rssd9001, rssd9999, rssd9017, %s
             from bank.%s
             where  rssd9999 %s""" % (vstr, table_name, datestr),
         date_cols=['rssd9999'])

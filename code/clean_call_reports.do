@@ -49,10 +49,10 @@ drop lei;
 rename id_lei lei;
 
 /* Estimates of insured and uninsured debt */
-gen ins_deposits = dep_retir_lt250k + dep_nretir_lt250k;
+gen ins_deposits = dep_retir_lt250k + dep_nretir_lt250k
 	+ (num_dep_retir_gt250k + num_dep_nretir_gt250k) * 250;
 gen unins_deposits = deposits - ins_deposits;
-gen unins_debt = total_liab - ins_deposits;
+gen unins_debt = liabilities - ins_deposits;
 gen unins_lev = unins_debt / assets;
 
 /* Merge with summary of deposits */
