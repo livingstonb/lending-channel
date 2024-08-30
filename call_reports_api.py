@@ -35,7 +35,7 @@ def variables(bhck=False):
         'a568': 'flien_5y15y',
         'a569': 'flien_ge15y',
         'a570': 'othll_le3m',
-        'a571': 'othll_3my1y',
+        'a571': 'othll_3m1y',
         'a572': 'othll_1y3y',
         'a573': 'othll_3y5y',
         'a574': 'othll_5y15y',
@@ -110,7 +110,6 @@ def variables(bhck=False):
             'bhdm6636': 'dom_interest_deposits',
             'bhfn6631': 'fn_nointerest_deposits',
             'bhfn6636': 'fn_interest_deposits',
-            'bhckf252': 'fv_deposits',
             'bhck2948': 'liabilities',
             'bhckg105': 'equity_capital',
             'bhck1763': 'dom_ci_loans',
@@ -147,7 +146,7 @@ def get_quarter(date, from_file=False, bhck=False):
         df = df.rename(columns=vars)
 
     if bhck:
-        data_quarter = df
+        data_quarter = df.drop('rssdid', axis=1)
     else:
         attr_files = ['data/NIC_attributes_closed.csv', 'data/NIC_attributes_active.csv']
         bhcids = call_reports.assign_topid_up(df, 'data/NIC_relationships.csv', attr_files, date)
@@ -161,7 +160,7 @@ if __name__ == "__main__":
 
     dates = [20220630, 20220930, 20221231, 20230331, 20230630, 20230930]
 
-    bhck = True
+    bhck = False
 
     qtables = list()
     for date in dates:

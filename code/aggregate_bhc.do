@@ -17,5 +17,3 @@ quietly sum qdate;
 gen temp_bdensity = nbranch / deposits * 1e5 if qdate == r(min);
 bysort rssdid: egen branch_density = max(temp_bdensity);
 drop temp_bdensity;
-
-

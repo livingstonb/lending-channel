@@ -73,6 +73,8 @@ do "${codedir}/aggregate_bhc.do";
 /* Statistics */
 drop if assets < 1000000;
 
+merge 1:1 rssdid qdate using "${tempdir}/bhck_for_merge.dta", nogen keep(1 3);
+
 /* Keep if present in each period */
 quietly sum qdate;
 scalar tperiods = r(max) - r(min) + 1;
