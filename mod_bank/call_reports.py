@@ -5,6 +5,7 @@ Created on Fri Jul 26 11:53:35 2024
 
 @author: brianlivingston
 """
+import itertools
 import re
 
 import pandas as pd
@@ -200,3 +201,25 @@ def move_up(links_table, child):
             return move_up(links_table, candidates.iloc[0]['parentid'])
         else:
             return -2
+
+
+def account_for_different_ffiec_forms(df):
+    variables = df.columns.names.tolist()
+
+    df = df.rename(columns={'rssdfininstfilingtype': 'form'})
+
+    # Variables reported in rcfd for FFIEC 031 not rcon
+    categories = ['famsec', 'gsec', 'othll']
+    maturities = ['le3m', '3m1y', '1y3y', '3y5y', '5y15y', 'ge15y']
+    rcfd_variables = ['_'.join(i) for i in itertools.product(categories, maturities)]
+    rcfd_variables.extend(['assets', 'liabilities', 'sub_debt',
+                           'total_equity_capital'])
+
+    # Drop prefix and replace rcon value with rcfd value for 031 filers
+    df = df.rename(columns={'rcon_' + x: x for x in rcfd_variables})
+    for varname in rcfd_variables:
+        df[varname] = df.where(df['form'] != 31, df['rcfd_' + varname])
+
+    # rcfd_flien variables don't exist, just rename rcon
+    flien_variables = ['flien_' + x for x in maturities]
+    df = df.rename(columns={'rcon_' + x: x for x in flien_variables})
