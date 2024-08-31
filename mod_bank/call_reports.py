@@ -51,7 +51,10 @@ class Query(object):
         """
 
         # Variables that show up in multiple tables (don't want merge issues)
-        common_vars = ['rssd9999', 'rssd9017']
+        if self.bhck:
+            common_vars = ['rssd9999', 'rssd9017']
+        else:
+            common_vars = ['rssd9999', 'rssd9017', 'rssdfininstfilingtype']
 
         # Query each table separately
         all_queries = list()
@@ -103,7 +106,7 @@ def query_one_table(conn, table_name, variables, date):
     datestr = f"between '{date} 00:00:00' and  '{date} 00:00:00'"
     # SQL query
     query_output = conn.raw_sql(
-        """select rssd9001, rssd9999, rssd9017, %s
+        """select rssd9001, rssd9999, rssd9017, rssdfininstfilingtype, %s
             from bank.%s
             where  rssd9999 %s""" % (vstr, table_name, datestr),
         date_cols=['rssd9999'])

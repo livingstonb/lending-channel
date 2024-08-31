@@ -22,14 +22,18 @@ def compute_losses(df):
     ]
     periods = ['le3m', '3m1y', '1y3y', '3y5y', '5y15y', 'ge15y']
 
+    # Use 2022Q1 values
+    df = df[df.date == pd.to_datetime("2021-12-31")]
+
     # MBS repricing
+    loss = []
     for prefix in ['rcon', 'rcfd']:
         rmbs_multiplier = dp['mbs_etf'] / dp['treasury_index']
         rmbs_loss = (df[f'{prefix}_famsec_{periods[0]}']
-                     + df[f'{prefix}_flien_{periods[0]}']) * d_treas_prices[0]
+                     + df[f'rcon_flien_{periods[0]}']) * d_treas_prices[0]
         for i in range(1, 6):
             rmbs_loss += (df[f'{prefix}_famsec_{periods[i]}']
-                         + df[f'{prefix}_flien_{periods[i]}']) * d_treas_prices[i]
+                         + df[f'rcon_flien_{periods[i]}']) * d_treas_prices[i]
         rmbs_loss = rmbs_loss * rmbs_multiplier
 
         # Treasury and other securities repricing
@@ -39,9 +43,17 @@ def compute_losses(df):
             other_sec_loss += (df[f'{prefix}_othll_{periods[i]}']
                               + df[f'{prefix}_gsec_{periods[i]}']) * d_treas_prices[i]
 
-        df[f'{prefix}_mtm_loss'] = rmbs_loss + other_sec_loss
+        ploss = rmbs_loss + other_sec_loss
+        ploss.name = f'{prefix}_2023_mtm_loss'
+        loss.append(ploss)
+        est_assets = df[f'{prefix}_assets'] + ploss
+        est_assets.name = f'{prefix}_2023_mtm_assets'
+        loss.append(est_assets)
+        # df[f'{prefix}_mtm_2023_loss'] = rmbs_loss + other_sec_loss
+        # df[f'{prefix}_mtm_2023_assets'] = df[f'{prefix}_assets'] + df[f'{prefix}_mtm_2023_loss']
 
-    return df
+    loss = pd.concat(loss, axis=1)
+    return loss
 
 
 def get_bond_price_changes():

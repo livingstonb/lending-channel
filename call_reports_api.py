@@ -1,6 +1,7 @@
 
 import pandas as pd
 from mod_bank import call_reports
+from mod_bank import mark_to_market as mtm
 import sys
 import io
 import os
@@ -158,7 +159,7 @@ def get_quarter(date, from_file=False, bhck=False):
 
 if __name__ == "__main__":
 
-    dates = [20220630, 20220930, 20221231, 20230331, 20230630, 20230930]
+    dates = [20211231, 20220331, 20220630, 20220930, 20221231, 20230331, 20230630, 20230930]
 
     bhck = False
 
@@ -178,3 +179,6 @@ if __name__ == "__main__":
     else:
         pathname = 'bank_data_cleaned.csv'
     df.to_csv(os.path.join('temp', pathname))
+
+    losses = mtm.compute_losses(df)
+    x = df.merge(losses, how='left', left_index=True, right_index=True)
