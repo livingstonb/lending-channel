@@ -42,7 +42,7 @@ def variables(bhck=False):
         'a574': 'othll_5y15y',
         'a575': 'othll_ge15y',
         'a901': 'merger_acq',
-        '2200': 'deposits',
+        '2200': 'deposits_domestic_office',
         '2170': 'assets',
         'b993': 'repo_liab_ff',
         'b995': 'repo_liab_oth',
@@ -94,11 +94,12 @@ def variables(bhck=False):
         all_vars.update(
             {prefix+key: '_'.join((prefix, val)) for key, val in vars.items()})
 
-    rcoa = {
+    other = {
         'rcoa8274': 'rcoa_tier1cap',
         'rcoa7204': 'rcoa_levratio',
+        'rcfn2200': 'deposits_foreign_office',
     }
-    all_vars.update(rcoa)
+    all_vars.update(other)
 
     if bhck:
         all_vars = {
@@ -169,6 +170,7 @@ if __name__ == "__main__":
         qtables.append(dq)
 
     df = pd.concat(qtables)
+    df = call_reports.account_for_different_ffiec_forms(df)
 
     fpath = 'temp'
     if not os.path.exists(fpath):

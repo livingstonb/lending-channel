@@ -204,8 +204,6 @@ def move_up(links_table, child):
 
 
 def account_for_different_ffiec_forms(df):
-    variables = df.columns.names.tolist()
-
     df = df.rename(columns={'rssdfininstfilingtype': 'form'})
 
     # Variables reported in rcfd for FFIEC 031 not rcon
@@ -215,11 +213,20 @@ def account_for_different_ffiec_forms(df):
     rcfd_variables.extend(['assets', 'liabilities', 'sub_debt',
                            'total_equity_capital'])
 
-    # Drop prefix and replace rcon value with rcfd value for 031 filers
+    # Drop rcon prefix and replace rcon value with rcfd value for 031 filers
     df = df.rename(columns={'rcon_' + x: x for x in rcfd_variables})
     for varname in rcfd_variables:
-        df[varname] = df.where(df['form'] != 31, df['rcfd_' + varname])
+        df[varname] = df[varname].mask(df['form'] == 31, df['rcfd_' + varname])
+    df = df.drop(['rcfd_' + v for v in rcfd_variables], axis=1)
 
-    # rcfd_flien variables don't exist, just rename rcon
-    flien_variables = ['flien_' + x for x in maturities]
-    df = df.rename(columns={'rcon_' + x: x for x in flien_variables})
+    # variables that only exist in rcon, drop rcon prefix
+    vars_to_drop_rcon = [
+        'deposits_domestic_office', 'dep_retir_lt250k', 'dep_retir_gt250k',
+        'num_dep_retir_gt250k', 'dep_nretir_lt250k', 'dep_nretir_gt250k',
+        'num_dep_nretir_gt250k', 'est_unins_deposits'
+    ]
+    vars_to_drop_rcon.extend(['flien_' + x for x in maturities])
+
+    df = df.rename(columns={'rcon_' + x: x for x in vars_to_drop_rcon})
+
+    return df
