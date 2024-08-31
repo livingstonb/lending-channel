@@ -223,7 +223,7 @@ def account_for_different_ffiec_forms(df):
     vars_to_drop_rcon = [
         'deposits_domestic_office', 'dep_retir_lt250k', 'dep_retir_gt250k',
         'num_dep_retir_gt250k', 'dep_nretir_lt250k', 'dep_nretir_gt250k',
-        'num_dep_nretir_gt250k', 'est_unins_deposits'
+        'num_dep_nretir_gt250k', 'est_unins_deposits', 'rcon'
     ]
     vars_to_drop_rcon.extend(['flien_' + x for x in maturities])
 

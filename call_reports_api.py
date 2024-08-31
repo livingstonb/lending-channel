@@ -171,6 +171,8 @@ if __name__ == "__main__":
 
     df = pd.concat(qtables)
     df = call_reports.account_for_different_ffiec_forms(df)
+    losses = mtm.compute_losses(df)
+    df = df.merge(losses, how='left', left_index=True, right_index=True)
 
     fpath = 'temp'
     if not os.path.exists(fpath):
@@ -182,5 +184,4 @@ if __name__ == "__main__":
         pathname = 'bank_data_cleaned.csv'
     df.to_csv(os.path.join('temp', pathname))
 
-    losses = mtm.compute_losses(df)
-    x = df.merge(losses, how='left', left_index=True, right_index=True)
+

@@ -15,18 +15,10 @@ gen qdate = qofd(ddate)
 format %tq qdate
 
 #delimit ;
-
-/* Use entries consolidated by domestic and foreign branches where possible */
-foreach var of varlist rcfd_* {;
-	local newvar = substr("`var'", 6, .);
-	gen `newvar' = `var';
-};
-foreach var of varlist rcon_* {;
-	local newvar = substr("`var'", 6, .);
-	cap gen `newvar' = `var';
-	replace `newvar' = `var' if missing(`newvar');
-};
-drop rcon_* rcfd_*;
+/* Cleaning */
+replace id_lei = lei if missing(id_lei);
+drop lei;
+rename id_lei lei;
 
 
 /* Commercial banks (200), holding companies (500) */
@@ -43,10 +35,6 @@ gen member_fhlbs = parent_mbr_fhlbs_ind if !missing(parent_mbr_fhlbs_ind);
 rename parent_nm_lgl parentname;
 drop parent_*;
 
-/* Cleaning */
-replace id_lei = lei if missing(id_lei);
-drop lei;
-rename id_lei lei;
 
 /* Estimates of insured and uninsured debt */
 gen ins_deposits = dep_retir_lt250k + dep_nretir_lt250k

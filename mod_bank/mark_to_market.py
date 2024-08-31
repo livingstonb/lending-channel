@@ -27,30 +27,30 @@ def compute_losses(df):
 
     # MBS repricing
     loss = []
-    for prefix in ['rcon', 'rcfd']:
-        rmbs_multiplier = dp['mbs_etf'] / dp['treasury_index']
-        rmbs_loss = (df[f'{prefix}_famsec_{periods[0]}']
-                     + df[f'rcon_flien_{periods[0]}']) * d_treas_prices[0]
-        for i in range(1, 6):
-            rmbs_loss += (df[f'{prefix}_famsec_{periods[i]}']
-                         + df[f'rcon_flien_{periods[i]}']) * d_treas_prices[i]
-        rmbs_loss = rmbs_loss * rmbs_multiplier
 
-        # Treasury and other securities repricing
-        other_sec_loss = (df[f'{prefix}_othll_{periods[0]}']
-                          + df[f'{prefix}_gsec_{periods[0]}']) * d_treas_prices[0]
-        for i in range(1, 6):
-            other_sec_loss += (df[f'{prefix}_othll_{periods[i]}']
-                              + df[f'{prefix}_gsec_{periods[i]}']) * d_treas_prices[i]
+    rmbs_multiplier = dp['mbs_etf'] / dp['treasury_index']
+    rmbs_loss = (df[f'famsec_{periods[0]}']
+                 + df[f'flien_{periods[0]}']) * d_treas_prices[0]
+    for i in range(1, 6):
+        rmbs_loss += (df[f'famsec_{periods[i]}']
+                     + df[f'flien_{periods[i]}']) * d_treas_prices[i]
+    rmbs_loss = rmbs_loss * rmbs_multiplier
 
-        ploss = rmbs_loss + other_sec_loss
-        ploss.name = f'{prefix}_2023_mtm_loss'
-        loss.append(ploss)
-        est_assets = df[f'{prefix}_assets'] + ploss
-        est_assets.name = f'{prefix}_2023_mtm_assets'
-        loss.append(est_assets)
-        # df[f'{prefix}_mtm_2023_loss'] = rmbs_loss + other_sec_loss
-        # df[f'{prefix}_mtm_2023_assets'] = df[f'{prefix}_assets'] + df[f'{prefix}_mtm_2023_loss']
+    # Treasury and other securities repricing
+    other_sec_loss = (df[f'othll_{periods[0]}']
+                      + df[f'gsec_{periods[0]}']) * d_treas_prices[0]
+    for i in range(1, 6):
+        other_sec_loss += (df[f'othll_{periods[i]}']
+                          + df[f'gsec_{periods[i]}']) * d_treas_prices[i]
+
+    ploss = rmbs_loss + other_sec_loss
+    ploss.name = f'mtm_2022_loss'
+    loss.append(ploss)
+    est_assets = df[f'assets'] + ploss
+    est_assets.name = f'mtm_2022q4_assets'
+    loss.append(est_assets)
+    # df[f'{prefix}_mtm_2023_loss'] = rmbs_loss + other_sec_loss
+    # df[f'{prefix}_mtm_2023_assets'] = df[f'{prefix}_assets'] + df[f'{prefix}_mtm_2023_loss']
 
     loss = pd.concat(loss, axis=1)
     return loss
