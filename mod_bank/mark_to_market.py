@@ -41,16 +41,19 @@ def compute_losses(df):
                       + df[f'gsec_{periods[0]}']) * d_treas_prices[0]
     for i in range(1, 6):
         other_sec_loss += (df[f'othll_{periods[i]}']
-                          + df[f'gsec_{periods[i]}']) * d_treas_prices[i]
+                            + df[f'gsec_{periods[i]}']) * d_treas_prices[i]
 
-    ploss = rmbs_loss + other_sec_loss
-    ploss.name = f'mtm_2022_loss'
-    loss.append(ploss)
-    est_assets = df[f'assets'] + ploss
-    est_assets.name = f'mtm_2022q4_assets'
-    loss.append(est_assets)
-    # df[f'{prefix}_mtm_2023_loss'] = rmbs_loss + other_sec_loss
-    # df[f'{prefix}_mtm_2023_assets'] = df[f'{prefix}_assets'] + df[f'{prefix}_mtm_2023_loss']
+    level_loss = rmbs_loss + other_sec_loss
+    level_loss.name = 'mtm_2022_loss_level'
+    pct_assets_loss = level_loss / df['assets']
+    pct_assets_loss.name = 'mtm_2022_loss_pct_assets'
+    pct_equity_loss = level_loss / df['total_equity_capital']
+    pct_equity_loss.name = 'mtm_2022_loss_pct_equity'
+
+    # est_assets = df['assets'] + level_loss
+    # est_assets.name = 'mtm_2022q4_assets'
+
+    loss.extend([level_loss, pct_assets_loss, pct_equity_loss])
 
     loss = pd.concat(loss, axis=1)
     return loss
