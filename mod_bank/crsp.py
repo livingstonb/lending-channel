@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import wrds
 import io, sys
@@ -31,22 +32,40 @@ def query_wrds(conn, permco_list, dates):
     datestr = f"between '{dates[0]} 00:00:00' and  '{dates[1]} 00:00:00'"
 
     query_output = conn.raw_sql(
-        """select permno, permco, date, ret, shrout, prc, openprc, divamt, facpr
-            from crsp.dsf
+        """select permno, permco, DlyCalDt, DlyPrc, DlyCap, DlyRet, DlyFacPrc, DlyClose, DlyOpen
+            from crsp.dsf_v2
             where  (permco in (%s))
-                and (date %s)""" % (permco_str, datestr),
-        date_cols=['date'])
+                and (DlyCalDt %s)""" % (permco_str, datestr),
+        date_cols=['DlyCalDt'])
     return query_output
 
 
 def concatenate(datasets):
     data = pd.concat(datasets, axis=0).reset_index()
-    data['strdate'] = data['date'].apply(
+    data = data.rename(columns={
+        'dlycaldt': 'date', 'dlyprc': 'prc', 'dlycap': 'cap',
+        'dlyret': 'R', 'dlyfacprc': 'pfac', 'dlyclose': 'close',
+        'dlyopen': 'open'
+    })
+    data['R'] = data['R'] + 1.0
+    data[data['R'] == -99]['R'] = np.nan
+    data['idR'] = data['prc'] / data['open']
+    data[(data['prc'] == 0) | (data['open'] == 0)]['idR'] = np.nan
+
+    data['return_labels'] = data['date'].apply(
         lambda x: f'R{x.strftime("%Y%m%d")}')
+    data['intraday_labels'] = data['date'].apply(
+        lambda x: f'idR{x.strftime("%Y%m%d")}')
+
+    date0 = min(data['date'])
+    cap = data[data['date'] == date0].set_index('rssdid')['cap']
+    data = data[data['date'] > date0]
     data = data.drop('date', axis=1)
-    data['ret'] = data['ret'] + 1.0
-    data = data.pivot(index='rssdid', columns='strdate', values='ret')
-    return data
+
+    returns = data.pivot(index='rssdid', columns='return_labels', values='R')
+    intraday = data.pivot(index='rssdid', columns='intraday_labels', values='idR')
+    df = pd.concat((returns, intraday, cap), axis=1)
+    return df
 
 
 if __name__ == "__main__":
@@ -59,7 +78,7 @@ if __name__ == "__main__":
     sys.stdin = io.StringIO(test_input)
     conn = wrds.Connection(username='blivingston')
 
-    data1 = query_dates(['2023-03-08', '2023-03-14'])
+    data1 = query_dates(['2023-03-07', '2023-03-14'])
     data2 = query_dates(['2023-04-29', '2023-05-03'])
     df = concatenate((data1, data2))
     df.to_csv('temp/crsp_daily_cleaned.csv')
