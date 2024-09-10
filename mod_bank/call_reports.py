@@ -144,7 +144,7 @@ def assign_topid_up(df, fname_links, attr_files, date):
 
     # Add top-tier name
     integer_vars = ['#ID_RSSD', 'DT_OPEN', 'DT_END', 'BHC_IND', 'CHTR_TYPE_CD',
-                    'FHC_IND', 'INSUR_PRI_CD', 'ID_RSSD_HD_OFF', 'IHC_IND',
+                    'FHC_IND', 'INSUR_PRI_CD', 'IHC_IND',
                     'MBR_FHLBS_IND', 'CNTRY_INC_CD']
     other_vars = ['ID_LEI', 'NM_LGL', 'DOMESTIC_IND']
     set_ints = {k: 'Int64' for k in integer_vars}

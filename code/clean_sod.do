@@ -1,0 +1,18 @@
+
+#delimit ;
+
+/* Save csv summary of deposits as dta */
+import delimited using "${tempdir}/sod_bank_level_2022.csv", clear;
+keep rssdid nbranch branch_density;
+destring branch_density, force replace;
+gen bhc = 0;
+
+tempfile sod_bank;
+save "`sod_bank'";
+
+import delimited using "${tempdir}/sod_bhc_level_2022.csv", clear;
+keep rssdid nbranch branch_density;
+append using "`sod_bank'";
+replace bhc = 1 if missing(bhc);
+
+save "${tempdir}/sod_2022.dta", replace;
