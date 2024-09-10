@@ -11,4 +11,7 @@ foreach var of varlist r2023* {;
 foreach var of varlist idr* {;
 	label variable `var' "CRSP intraday return";
 };
+
+gen long parentid = rssdid;
+
 save "${tempdir}/crsp_daily_cleaned.dta", replace;

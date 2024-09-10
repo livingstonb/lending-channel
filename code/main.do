@@ -1,5 +1,5 @@
 
-global projdir "/Users/brianlivingston/Library/Mobile Documents/com~apple~CloudDocs/svb_shock"
+global projdir "/Users/brianlivingston/Dropbox/NU/Projects/svb-shock"
 global datadir "${projdir}/data"
 global codedir "${projdir}/code"
 global tempdir "${projdir}/temp"
@@ -21,6 +21,8 @@ do "${codedir}/clean_crsp_daily.do";
 use "${tempdir}/cleaned_bank_bhc_combined.dta", clear;
 merge m:1 rssdid using "${tempdir}/sod_2022.dta", nogen keep(1 3);
 merge m:1 rssdid using "${tempdir}/crsp_daily_cleaned.dta", nogen keep(1 3);
+merge m:1 parentid using "${tempdir}/crsp_daily_cleaned.dta",
+	nogen keep(1 3 4) update keepusing(r2* idr*);
 replace name = strtrim(name);
 
 /* Drop (for now) */
