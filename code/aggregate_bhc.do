@@ -14,9 +14,11 @@ rename parent_cntry_inc_cd cntry_inc_cd;
 replace lei = "" if lei == "0";
 
 /* Variables to be summed over banks within bhc by quarter */
-local sumvars est_unins_deposits ins_deposits unins_deposits
-	unins_debt assets deposits liabilities mtm_2022_loss_level
-	total_equity_capital;
+local sumvars est_unins_deposits ins_deposits alt_ins_deposits
+	assets deposits liabilities mtm_2022_loss_level
+	total_equity_capital htm_securities afs_debt_securities
+	eq_sec_notftrading pledged_securities
+	ll_hfs ll_hfi ll_loss_allowance pledged_ll;
 	
 local sumexpr;
 foreach var of local sumvars {;

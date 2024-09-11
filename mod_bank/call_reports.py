@@ -203,15 +203,28 @@ def move_up(links_table, child):
             return -2
 
 
+def strip_prefixed(variables, prefix):
+    return [s.split(prefix)[1] for s in variables]
+
+
 def account_for_different_ffiec_forms(df):
     df = df.rename(columns={'rssdfininstfilingtype': 'form'})
+    column_names = df.columns.tolist()
+
+    rcon_list = [s for s in column_names if s.startswith('rcon_')]
+    rcon_list = strip_prefixed(rcon_list, 'rcon_')
+    rmbs_variables = [s for s in rcon_list if s.startswith('rmbs_')]
 
     # Variables reported in rcfd for FFIEC 031 not rcon
     categories = ['famsec', 'gsec', 'othll']
     maturities = ['le3m', '3m1y', '1y3y', '3y5y', '5y15y', 'ge15y']
     rcfd_variables = ['_'.join(i) for i in itertools.product(categories, maturities)]
-    rcfd_variables.extend(['assets', 'liabilities', 'sub_debt',
-                           'total_equity_capital'])
+    rcfd_variables.extend([
+        'assets', 'liabilities', 'sub_debt', 'total_equity_capital',
+        'pledged_securities', 'pledged_ll', 'htm_securities', 'afs_debt_securities',
+        'eq_sec_notftrading', 'll_hfs', 'll_hfi', 'll_loss_allowance'
+    ])
+    rcfd_variables.extend(rmbs_variables)
 
     # Drop rcon prefix and replace rcon value with rcfd value for 031 filers
     df = df.rename(columns={'rcon_' + x: x for x in rcfd_variables})
@@ -223,7 +236,8 @@ def account_for_different_ffiec_forms(df):
     vars_to_drop_rcon = [
         'deposits_domestic_office', 'dep_retir_lt250k', 'dep_retir_gt250k',
         'num_dep_retir_gt250k', 'dep_nretir_lt250k', 'dep_nretir_gt250k',
-        'num_dep_nretir_gt250k', 'est_unins_deposits', 'lei'
+        'num_dep_nretir_gt250k', 'est_unins_deposits', 'lei',
+        'liab_fbk_trans', 'liab_fbk_ntrans', 'liab_foff_trans', 'liab_foff_ntrans',
     ]
     vars_to_drop_rcon.extend(['flien_' + x for x in maturities])
 

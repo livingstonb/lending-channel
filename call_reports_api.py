@@ -79,7 +79,6 @@ def variables(bhck=False):
         '1754': 'totsec_afs_amort',
         '1771': 'totsec_afs_fval',
         '1772': 'totsec_htm_amort',
-        '1773': 'totsec_htm_fval',
         'jj11': 'loanls_loss_res_amort',
         'jj19': 'loanls_loss_res_bal',
         'jj25': 'htmsec_loss_res_bal',
@@ -87,6 +86,14 @@ def variables(bhck=False):
         'f614': 'ci_loans_trading',
         '2122': 'all_loansls_htm_hfs',
         '3545': 'total_trading_assets',
+        '0416': 'pledged_securities',
+        'g378': 'pledged_ll',
+        '5369': 'll_hfs',
+        'b528': 'll_hfi',
+        '3123': 'll_loss_allowance',
+        'jj34': 'htm_securities',
+        '1773': 'afs_debt_securities',
+        'ja22': 'eq_sec_notftrading',
     }
 
     all_vars = dict()
@@ -161,8 +168,7 @@ def get_quarter(date, from_file=False, bhck=False):
 if __name__ == "__main__":
 
     dates = [20210331, 20211231, 20220331, 20220630, 20220930, 20221231, 20230331, 20230630, 20230930]
-
-    bhck = False
+    bhck = True
 
     qtables = list()
     for date in dates:

@@ -24,7 +24,7 @@ drop chtr_type_cd insur_pri_cd *domestic_ind;
 
 gen year = year(ddate);
 gen qlabel = string(qdate, "%tq");
-drop *hc_ind id_rssd_hd_off dt_* cntry_inc_cd ddate nm_lgl;
+drop *hc_ind dt_* cntry_inc_cd ddate nm_lgl;
 
 rename parent_mbr_fhlbs_ind parent_member_fhlbs;
 rename mbr_fhlbs_ind member_fhlbs;
@@ -33,8 +33,7 @@ rename parent_nm_lgl parentname;
 /* Estimates of insured and uninsured debt */
 gen ins_deposits = dep_retir_lt250k + dep_nretir_lt250k
 	+ (num_dep_retir_gt250k + num_dep_nretir_gt250k) * 250;
-gen unins_deposits = deposits - ins_deposits;
-gen unins_debt = liabilities - ins_deposits;
+gen alt_ins_deposits = dep_retir_lt250k + dep_nretir_lt250k;
 
 /* Save bank level */
 gen bhclevel = 0;
@@ -48,8 +47,6 @@ save "${tempdir}/cleaned_bhc_level.dta", replace;
 /* Append */
 use "${tempdir}/cleaned_bank_level.dta", clear;
 append using "${tempdir}/cleaned_bhc_level.dta";
-
-gen unins_lev = unins_debt / assets;
 
 save "${tempdir}/cleaned_bank_bhc_combined.dta", replace;
 
