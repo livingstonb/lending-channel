@@ -23,14 +23,36 @@ reg D.log_unins_dep c.r20230310##c.(L2.unins_lev branch_density mtm_2022_loss_pc
 */
 
 /* First stage, return regression */
-preserve;
-keep if bhclevel;
+
+
+
+duplicates drop rssdid qdate, force;
 tsset rssdid qdate;
+gen fd_log_deposits = F2D.log_assets;
+
+keep if bank & domestic | bhclevel;
+
+capture program drop one_rep;
+program define one_rep;
+
+
+
 reg svbR
-	branch_density unins_lev coll_unins_debt_ratio mtm_2022_loss_pct_equity D4.unins_lev
-	 D4.log_unins_dep log_assets leverage log_pledgeable_coll
-	if date == "2022-12-31", robust;
+	branch_density unins_lev coll_unins_debt_ratio mtm_2022_loss_pct_equity
+	log_unins_dep log_assets leverage log_pledgeable_coll
+	if date == "2022-12-31" & bhclevel;
+cap drop fittedR;
+
+predict fittedR if date == "2022-12-31" & !bhclevel, xb;
+reg fd_log_deposits fittedR mtm_2022_loss_pct_equity
+	branch_density unins_lev if date == "2022-12-31";
+
+end program;
+
+bootstrap, reps(50) nodrop: one_rep;
+
 restore;
+
 
 keep if !bhclevel;
 tsset rssdid qdate;

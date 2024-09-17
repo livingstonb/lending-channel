@@ -6,7 +6,7 @@ class MTMConfig:
     treas_index_fpath = 'data/sp_treasury_indexes.csv'
     ishares_etf_fpath = 'data/ishares_etfs.csv'
     sp_treasury_index_fpath = 'data/sp_treasury_bond_index.csv'
-    end_date = "2022-12-31"
+    end_date = pd.to_datetime("2022-12-31") # 2022-12-31
 
 
 def compute_losses(df):
@@ -22,18 +22,15 @@ def compute_losses(df):
     ]
     periods = ['le3m', '3m1y', '1y3y', '3y5y', '5y15y', 'ge15y']
 
-    # Use 2022Q1 values
-    df = df[df.date == pd.to_datetime("2021-12-31")]
-
     # MBS repricing
     loss = []
 
-    rmbs_multiplier = dp['mbs_etf'] / dp['treasury_index']
+    rmbs_multiplier = (1 - dp['mbs_etf']) / (1 - dp['treasury_index'])
     rmbs_loss = (df[f'famsec_{periods[0]}']
-                 + df[f'flien_{periods[0]}']) * d_treas_prices[0]
+                 + df[f'flien_{periods[0]}']) * (1 - d_treas_prices[0])
     for i in range(1, 6):
         rmbs_loss += (df[f'famsec_{periods[i]}']
-                     + df[f'flien_{periods[i]}']) * d_treas_prices[i]
+                     + df[f'flien_{periods[i]}']) * (1 - d_treas_prices[i])
     rmbs_loss = rmbs_loss * rmbs_multiplier
 
     # Treasury and other securities repricing
@@ -61,23 +58,16 @@ def compute_losses(df):
 
 def get_bond_price_changes():
     treasury_prices = read_treasury_prices(MTMConfig.treas_index_fpath)
-    yoy_2023Q1_treas = compute_pct_change(treasury_prices, MTMConfig.end_date, 4)
-
     ishares_prices = read_ishares_prices(MTMConfig.ishares_etf_fpath)
-    yoy_2023Q1_etfs = compute_pct_change(ishares_prices, MTMConfig.end_date, 4)
-
     sp_treas_index = read_sp_treasury_index(MTMConfig.sp_treasury_index_fpath)
-    yoy_2023Q1_spind = compute_pct_change(sp_treas_index, MTMConfig.end_date, 4)
 
-    keys = yoy_2023Q1_etfs.columns.tolist(
-        ) + yoy_2023Q1_treas.columns.tolist(
-        ) + yoy_2023Q1_spind.columns.tolist()
-    values = np.concatenate(
-        (yoy_2023Q1_etfs.values[0, :],
-         yoy_2023Q1_treas.values[0, :],
-         yoy_2023Q1_spind.values[0, :]
-         ))
-    dp = {k: v for k, v in zip(keys, values)}
+    df = pd.concat((treasury_prices, ishares_prices, sp_treas_index), axis=1)
+    D12_df = df / df.shift(12)
+    pchange = D12_df[df.index == MTMConfig.end_date]
+
+    dp = dict()
+    for key in pchange.columns.tolist():
+        dp[key] = pchange[key].values[0]
     return dp
 
 
@@ -97,6 +87,7 @@ def read_treasury_prices(fname):
     df = df.set_index('date').sort_values('datenum')
 
     df = df[[var for var in df.columns.tolist() if 'ind' in var]]
+    df = df.resample('M', label='right', convention='end', closed='right').agg('last')
     return df
 
 
@@ -118,36 +109,20 @@ def read_ishares_prices(fname):
             'IEF': 'treas_etf_7y10y',
             'TLH': 'treas_etf_10y20y',
             'TLT': 'treas_etf_g20y',
-            'MBB': 'mbs_etf',
+            'SPMB': 'mbs_etf',
             }
     df = df.rename(columns=secs)
-    return df
+    df = df.drop(['MBB'], axis=1)
+    df = df.resample('M', label='right', convention='end', closed='right').agg('last')
+    return df.abs()
 
 
 def read_sp_treasury_index(fname):
     df = pd.read_csv(fname)
     df['date'] = pd.to_datetime(df['date'])
     df = df.set_index('date').sort_index()
-
+    df = df.resample('M', label='right', convention='end', closed='right').agg('last')
     return df
-
-def compute_pct_change(prices, end_dt, periods):
-    """
-
-    Args:
-        prices: DataFrame, rows of dates and columns are securities
-        end_dt: string of form "YYYY-MM-DD"
-        periods: number of periods back to compute percent change
-
-    Returns:
-        one-row DataFrame of percent price changes, backward "periods"
-        from end_dt
-    """
-    prices = prices.resample('Q-DEC', label='right', convention='end',
-                     closed='right').agg('last')
-    dprice = prices.pct_change(periods=periods)
-    pct_dprice = dprice[dprice.index == pd.to_datetime(end_dt)]
-    return pct_dprice
 
 
 if __name__ == "__main__":
