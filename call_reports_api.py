@@ -94,6 +94,12 @@ def variables(bhck=False):
         'jj34': 'htm_securities',
         '1773': 'afs_debt_securities',
         'ja22': 'eq_sec_notftrading',
+        '3164': 'mort_servicing_assets',
+        'A590': 'mort_servicing_assets_fv',
+        '1763': 'ci_loans',
+        'J454': 'nbfi_loans',
+        'J457': 'unused_comm_ci',
+        'J458': 'unused_comm_nbfi'
     }
 
     all_vars = dict()

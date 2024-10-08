@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Contains main operations to request and clean call reports data.
 Created on Fri Jul 26 11:53:35 2024
 
 @author: brianlivingston
 """
 import itertools
 import re
-
 import pandas as pd
 import numpy as np
 import wrds
@@ -37,13 +37,17 @@ class Query(object):
         for tabname in self.tabnames:
             tab_variables = self.conn.get_table(
                 library='bank', table=tabname, obs=1).columns.tolist()
+
             # Subset of selected variables in tabname
             selected_in_tab = [var for var in selected if var in tab_variables]
+
+            # Dictionary that links table 'tabname' to a list of selected variables
+            # that show up in the WRDS table 'tabname'
             self.variables_by_table.update({tabname: selected_in_tab})
 
     def query(self, date):
         """
-
+        Query the WRDS tables.
         Args:
             date: integer date, YYYYMMDD
 
@@ -70,7 +74,7 @@ class Query(object):
             query_this_table = query_this_table.set_index('rssd9001', drop=True)
             query_this_table.index.name = 'rssdid'
 
-            # Save observation date and names for later
+            # Save observation date and names for later, same across loop iterations
             dates_names = query_this_table[common_vars]
             query_this_table = query_this_table.drop(common_vars, axis=1)
 
@@ -103,7 +107,7 @@ def query_one_table(conn, table_name, variables, date):
     # String to pass to SQL for variable selection
     vstr = ', '.join(variables)
 
-    # Date string
+    # Date range string
     datestr = f"between '{date} 00:00:00' and  '{date} 00:00:00'"
     # SQL query
     query_output = conn.raw_sql(
@@ -129,27 +133,31 @@ def assign_topid_up(df, fname_links, attr_files, date):
     date_mask = (links_table['DT_START'] <= date
                  ) & (links_table['DT_END'] >= date)
     links_table = links_table[date_mask]
-
     links_table = links_table.rename(columns={
         'ID_RSSD_OFFSPRING': 'rssd9001',
         '#ID_RSSD_PARENT': 'parentid'})
 
+    # Start recursion up the ownership structure
+    # Each unique rssdid is treated as a child
     results = np.full((len(children), 2), -10, dtype=np.int64)
     for i, child in enumerate(children):
         parent = move_up(links_table, child)
+        # Results from recursion. Row is: [child rssdid, parent rssdid]
         results[i, 0] = child
         results[i, 1] = parent
 
     final = pd.DataFrame(results, columns=['rssdid', 'parentid'])
 
-    # Add top-tier name
+    # Add variables
     integer_vars = ['#ID_RSSD', 'DT_OPEN', 'DT_END', 'BHC_IND', 'CHTR_TYPE_CD',
                     'FHC_IND', 'INSUR_PRI_CD', 'IHC_IND',
                     'MBR_FHLBS_IND', 'CNTRY_INC_CD']
-    other_vars = ['ID_LEI', 'NM_LGL', 'DOMESTIC_IND']
     set_ints = {k: 'Int64' for k in integer_vars}
+    other_vars = ['ID_LEI', 'NM_LGL', 'DOMESTIC_IND']
 
+    # Merge in parent bank attributes table and then child bank attributes
     for parent in [True, False]:
+        # Attr_files are active, and closed banks
         for i, fname_attr in enumerate(attr_files):
             attr_table = pd.read_csv(fname_attr,
                                       usecols=other_vars+integer_vars,
@@ -222,7 +230,8 @@ def account_for_different_ffiec_forms(df):
     rcfd_variables.extend([
         'assets', 'liabilities', 'sub_debt', 'total_equity_capital',
         'pledged_securities', 'pledged_ll', 'htm_securities', 'afs_debt_securities',
-        'eq_sec_notftrading', 'll_hfs', 'll_hfi', 'll_loss_allowance'
+        'eq_sec_notftrading', 'll_hfs', 'll_hfi', 'll_loss_allowance',
+        'mort_servicing_assets', 'mort_servicing_assets_fv', 'ci_loans'
     ])
     rcfd_variables.extend(rmbs_variables)
 
@@ -238,6 +247,7 @@ def account_for_different_ffiec_forms(df):
         'num_dep_retir_gt250k', 'dep_nretir_lt250k', 'dep_nretir_gt250k',
         'num_dep_nretir_gt250k', 'est_unins_deposits', 'lei',
         'liab_fbk_trans', 'liab_fbk_ntrans', 'liab_foff_trans', 'liab_foff_ntrans',
+        'ci_loans', 'unused_comm_ci', 'nbfi_loans', 'unused_comm_nbfi'
     ]
     vars_to_drop_rcon.extend(['flien_' + x for x in maturities])
 
