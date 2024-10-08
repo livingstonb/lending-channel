@@ -95,7 +95,6 @@ def variables(bhck=False):
         '1773': 'afs_debt_securities',
         'ja22': 'eq_sec_notftrading',
         '3164': 'mort_servicing_assets',
-        'A590': 'mort_servicing_assets_fv',
         '1763': 'ci_loans',
         'J454': 'nbfi_loans',
         'J457': 'unused_comm_ci',
@@ -173,8 +172,17 @@ def get_quarter(date, from_file=False, bhck=False):
 
 if __name__ == "__main__":
 
-    dates = [20210331, 20211231, 20220331, 20220630, 20220930, 20221231, 20230331, 20230630, 20230930]
-    bhck = True
+    quarters = [331, 630, 930, 1231]
+    years = [2018, 2019, 2020, 2021, 2022, 2023]
+    dates = []
+    for y in years:
+        for q in quarters:
+            dates.append(int(y * 1e4) + q)
+    dates.pop()
+
+    # dates = [20210331, 20211231, 20220331, 20220630, 20220930,
+    # 20221231, 20230331, 20230630, 20230930]
+    bhck = False
 
     qtables = list()
     for date in dates:

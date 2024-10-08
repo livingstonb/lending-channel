@@ -231,7 +231,7 @@ def account_for_different_ffiec_forms(df):
         'assets', 'liabilities', 'sub_debt', 'total_equity_capital',
         'pledged_securities', 'pledged_ll', 'htm_securities', 'afs_debt_securities',
         'eq_sec_notftrading', 'll_hfs', 'll_hfi', 'll_loss_allowance',
-        'mort_servicing_assets', 'mort_servicing_assets_fv', 'ci_loans'
+        'mort_servicing_assets', 'ci_loans'
     ])
     rcfd_variables.extend(rmbs_variables)
 
