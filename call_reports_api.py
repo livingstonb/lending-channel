@@ -95,7 +95,6 @@ def variables(bhck=False):
         '1773': 'afs_debt_securities',
         'ja22': 'eq_sec_notftrading',
         '3164': 'mort_servicing_assets',
-        '1763': 'ci_loans',
         'J454': 'nbfi_loans',
         'J457': 'unused_comm_ci',
         'J458': 'unused_comm_nbfi'
@@ -110,6 +109,15 @@ def variables(bhck=False):
         'rcoa8274': 'rcoa_tier1cap',
         'rcoa7204': 'rcoa_levratio',
         'rcfn2200': 'deposits_foreign_office',
+        'riadB493': 'net_sec_income',
+        'riadB492': 'net_serv_fees',
+        'rconB538': 'cons_cc_loans',
+        'rconB539': 'cons_oth_revolvc_loans',
+        'rconK137': 'cons_auto_loans',
+        'rconK207': 'cons_oth_loans',
+        'rcon2122': 'tot_loansleases',
+        'rcon2123': 'unearnedinc_loansleases',
+        'rcon1763': 'ci_loans'
     }
     all_vars.update(other)
 

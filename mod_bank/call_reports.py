@@ -231,7 +231,7 @@ def account_for_different_ffiec_forms(df):
         'assets', 'liabilities', 'sub_debt', 'total_equity_capital',
         'pledged_securities', 'pledged_ll', 'htm_securities', 'afs_debt_securities',
         'eq_sec_notftrading', 'll_hfs', 'll_hfi', 'll_loss_allowance',
-        'mort_servicing_assets', 'ci_loans'
+        'mort_servicing_assets'
     ])
     rcfd_variables.extend(rmbs_variables)
 
@@ -246,8 +246,7 @@ def account_for_different_ffiec_forms(df):
         'deposits_domestic_office', 'dep_retir_lt250k', 'dep_retir_gt250k',
         'num_dep_retir_gt250k', 'dep_nretir_lt250k', 'dep_nretir_gt250k',
         'num_dep_nretir_gt250k', 'est_unins_deposits', 'lei',
-        'liab_fbk_trans', 'liab_fbk_ntrans', 'liab_foff_trans', 'liab_foff_ntrans',
-        'ci_loans', 'unused_comm_ci', 'nbfi_loans', 'unused_comm_nbfi'
+        'liab_fbk_trans', 'liab_fbk_ntrans', 'liab_foff_trans', 'liab_foff_ntrans'
     ]
     vars_to_drop_rcon.extend(['flien_' + x for x in maturities])
 
