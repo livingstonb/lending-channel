@@ -16,7 +16,7 @@ import wrds
 class Query(object):
     uname = 'blivingston'
     tabnames = ['wrds_call_rcon_1', 'wrds_call_rcon_2', 'wrds_call_rcfd_1', 'wrds_call_rcfd_2',
-                'wrds_call_rcoa_1']
+                'wrds_call_rcoa_1', 'wrds_call_riad_1']
     variables_by_table = dict()
 
     def __init__(self, uname, bhck=False):

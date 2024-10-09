@@ -95,9 +95,9 @@ def variables(bhck=False):
         '1773': 'afs_debt_securities',
         'ja22': 'eq_sec_notftrading',
         '3164': 'mort_servicing_assets',
-        'J454': 'nbfi_loans',
-        'J457': 'unused_comm_ci',
-        'J458': 'unused_comm_nbfi'
+        'j454': 'nbfi_loans',
+        'j457': 'unused_comm_ci',
+        'j458': 'unused_comm_nbfi'
     }
 
     all_vars = dict()
@@ -178,6 +178,13 @@ def get_quarter(date, from_file=False, bhck=False):
     return data_quarter
 
 
+def startswith_anyof(variables, prefixes):
+    vars_found = []
+    for pre in prefixes:
+        vars_found += [v for v in variables if v.startswith(pre)]
+
+    return vars_found
+
 if __name__ == "__main__":
 
     quarters = [331, 630, 930, 1231]
@@ -201,6 +208,12 @@ if __name__ == "__main__":
     df = call_reports.account_for_different_ffiec_forms(df)
     losses = mtm.compute_losses(df)
     df = df.merge(losses, how='left', left_index=True, right_index=True)
+
+    # Drop repricing variables
+    prefixes = ['gsec', 'flien', 'famsec', 'othll']
+    repricing_vars = startswith_anyof(df.columns.tolist(), prefixes)
+    df = df.drop(repricing_vars, axis=1)
+    df = df.drop([k for k in df.columns.tolist() if k.startswith('rmbs_')], axis=1)
 
     fpath = 'temp'
     if not os.path.exists(fpath):
