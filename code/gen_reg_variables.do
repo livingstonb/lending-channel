@@ -11,9 +11,10 @@ gen unins_leverage = unins_debt / assets;
 gen log_unins_deposits = log(unins_dep);
 gen log_unins_debt = log(unins_debt);
 
-/* Returns */
-gen svbR = idr20230309 * r20230310 * r20230313;
-gen firstrepR = r20230501 * r20230502 * r20230503;
+/* Returns
+gen comp_svbR = idr20230309 * r20230310 * r20230313;
+gen comp_firstrepR = r20230501 * r20230502 * r20230503;
+*/
 
 gen leverage = assets / total_equity_capital;
 
@@ -29,4 +30,5 @@ gen coll_unins_debt_ratio = pledgeable_coll / unins_debt;
 gen pledgeable_share = pledgeable_coll /
 	(htm_securities + afs_debt_securities + eq_sec_notftrading
 		+ ll_hfs + ll_hfi - ll_loss_allowance);
+
 

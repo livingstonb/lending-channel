@@ -11,11 +11,18 @@ do "${codedir}/gen_reg_variables.do";
 /* 
 keep if bhclevel;
 */
-tsset rssdid qdate;
-keep if assets >= 1000;
-keep if bank;
-keep if domestic;
+#delimit ;
+gen sample = (assets >= 1000) & bank & domestic;
 drop if bhclevel;
+tsset rssdid qdate;
+
+/* Odd change in asset level, looks like major acquisition/sale */
+gen dp_assets = (assets - L.assets) / L.assets;
+gen dasset_flag = abs(dp_assets) > 0.5 if !missing(dp_assets)
+
+/* Present for previous quarter */
+/* FLAG EVENTS */
+
 
 #delimit ;
 /* Regressions, change in deposits or originations? */

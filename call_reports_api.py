@@ -150,9 +150,8 @@ def variables(bhck=False):
     return all_vars
 
 
-def get_quarter(date, from_file=False, bhck=False):
-    if from_file:
-        fpath = 'data/call_jun2022.csv'
+def get_quarter(date, bhck=False, filepath=""):
+    if filepath:
         df = pd.read_csv(fpath, header=0, index_col='rssdid')
     else:
         # Create a string that will serve as our simulated input
@@ -192,23 +191,32 @@ def startswith_anyof(variables, prefixes):
 
     return vars_found
 
+
 if __name__ == "__main__":
+    # Generate test data
+    gen_test_data = False
+    test_data_path = 'temp/test_data'
 
-    dates = [20210331]
-
+    # Select quarters
     quarters = [331, 630, 930, 1231]
     years = [2018, 2019, 2020, 2021, 2022, 2023]
     dates = [int(y * 1e4) + q for y in years for q in quarters]
     dates.pop()
 
+    # BHCK data?
     bhck = False
 
+    # Collect call reports
     qtables = list()
     for date in dates:
         dq = get_quarter(date, bhck=bhck)
         qtables.append(dq)
 
     df = pd.concat(qtables)
+    if gen_test_data:
+        test_call_fpath = os.path.join(test_data_path, 'post_get_quarter.csv')
+        df.to_csv(test_call_fpath)
+
     df = call_reports.account_for_different_ffiec_forms(df)
     losses = mtm.compute_losses(df)
     df = df.merge(losses, how='left', left_on='rssdid', right_on='rssdid')

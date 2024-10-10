@@ -18,10 +18,18 @@ class Query(object):
     tabnames = ['wrds_call_rcon_1', 'wrds_call_rcon_2', 'wrds_call_rcfd_1', 'wrds_call_rcfd_2',
                 'wrds_call_rcoa_1', 'wrds_call_riad_1']
     variables_by_table = dict()
+    n_test_data = -1
+    gen_test_data = False
+    test_data_path = 'temp/test_input'
 
-    def __init__(self, uname, bhck=False):
+    def __init__(self, uname, bhck=False, gen_test_data=False):
         self.conn = wrds.Connection(username=uname)
         self.bhck = bhck
+
+        self.gen_test_data = gen_test_data
+        if self.gen_test_data:
+            self.n_test_data = 100
+
         if bhck:
             self.tabnames = ['wrds_holding_bhck_1', 'wrds_holding_bhck_2',
                              'wrds_holding_other_1']
@@ -68,9 +76,15 @@ class Query(object):
             if len(variables) == 0:
                 continue
 
+            # Limit dataset
+            if self.gen_test_data:
+                nsample = self.n_test_data
+            else:
+                nsample = -1
+
             # Query selected table
             query_this_table = query_one_table(
-                self.conn, table_name, variables, date)
+                self.conn, table_name, variables, date, nsample)
             query_this_table = query_this_table.set_index('rssd9001', drop=True)
             query_this_table.index.name = 'rssdid'
 
@@ -92,7 +106,7 @@ class Query(object):
         return df_out
 
 
-def query_one_table(conn, table_name, variables, date):
+def query_one_table(conn, table_name, variables, date, n_test_data):
     """
 
     Args:
@@ -107,13 +121,20 @@ def query_one_table(conn, table_name, variables, date):
     # String to pass to SQL for variable selection
     vstr = ', '.join(variables)
 
+    # Generate mall dataset if using for tests
+    if n_test_data > 0:
+        limstr = f"limit {n_test_data}"
+    else:
+        limstr = ""
+
     # Date range string
     datestr = f"between '{date} 00:00:00' and  '{date} 00:00:00'"
     # SQL query
     query_output = conn.raw_sql(
         """select rssd9001, rssd9999, rssd9017, rssdfininstfilingtype, %s
             from bank.%s
-            where  rssd9999 %s""" % (vstr, table_name, datestr),
+            where  rssd9999 %s
+            %s""" % (vstr, table_name, datestr, limstr),
         date_cols=['rssd9999'])
     return query_output
 
@@ -239,8 +260,30 @@ def account_for_ma(df, fpath):
     transf = pd.read_csv(fpath)
     vars = transf.columns.tolist()
     transf = transf.rename(columns={n: n.lower() for n in vars})
+    transf = transf.rename(columns={
+        'id_rssd_successor': 'event_successor',
+        '#id_rssd_predecessor': 'event_predecessor',
+    })
 
+    # Tranformation date by quarter
+    transf['d_dt_trans'] = pd.to_datetime(transf['d_dt_trans'])
+    transf['quarter'] = functions.quarter_end(transf['d_dt_trans'])
     min_date = df['date'].min()
-    transf
+    transf = transf[transf['quarter'] >= min_date]
 
-    df['date'].iloc[0].to_period("Q").end_time.normalize()
+    # Merge predecessor events
+    sel_idx = ['event_predecessor', 'quarter']
+    selection = transf[['event_predecessor', 'quarter', 'trnsfm_cd']]
+    selection = selection.drop_duplicates(sel_idx)
+    selection = selection.rename({'trnsfm_cd': 'event_was_predecessor_cd'})
+    df = pd.merge(df, selection, left_on=['rssdid', 'date'], right_on=sel_idx, how='left')
+    df = df.drop(sel_idx)
+
+    # Merge successor events
+    sel_idx = ['event_successor', 'quarter']
+    selection = transf[sel_idx].drop_duplicates(sel_idx)
+    selection['event_was_successor'] = 1
+    df = pd.merge(df, selection, left_on=['rssdid', 'date'], right_on=sel_idx, how='left')
+    df = df.drop(sel_idx)
+
+    return df

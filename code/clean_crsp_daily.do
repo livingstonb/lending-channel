@@ -14,4 +14,9 @@ foreach var of varlist idr* {;
 
 gen long parentid = rssdid;
 
+gen svbR = (p20230313 - p20230308) / p20230308;
+gen frR = (p20230502 - p20230428) / p20230428;
+
+drop r20* idr20* p20*;
+
 save "${tempdir}/crsp_daily_cleaned.dta", replace;

@@ -51,11 +51,15 @@ def concatenate(datasets):
     data[data['R'] == -99]['R'] = np.nan
     data['idR'] = data['prc'] / data['open']
     data[(data['prc'] == 0) | (data['open'] == 0)]['idR'] = np.nan
+    data[data['prc'] == 0]['prc'] = np.nan
+    data = data.rename(columns={'prc': 'p'})
 
     data['return_labels'] = data['date'].apply(
         lambda x: f'R{x.strftime("%Y%m%d")}')
     data['intraday_labels'] = data['date'].apply(
         lambda x: f'idR{x.strftime("%Y%m%d")}')
+    data['price_labels'] = data['date'].apply(
+        lambda x: f'p{x.strftime("%Y%m%d")}')
 
     date0 = min(data['date'])
     cap = data[data['date'] == date0].set_index('rssdid')['cap']
@@ -64,7 +68,8 @@ def concatenate(datasets):
 
     returns = data.pivot(index='rssdid', columns='return_labels', values='R')
     intraday = data.pivot(index='rssdid', columns='intraday_labels', values='idR')
-    df = pd.concat((returns, intraday, cap), axis=1)
+    price = data.pivot(index='rssdid', columns='price_labels', values='p')
+    df = pd.concat((returns, intraday, price, cap), axis=1)
     return df
 
 
@@ -79,6 +84,6 @@ if __name__ == "__main__":
     conn = wrds.Connection(username='blivingston')
 
     data1 = query_dates(['2023-03-07', '2023-03-14'])
-    data2 = query_dates(['2023-04-29', '2023-05-03'])
+    data2 = query_dates(['2023-04-28', '2023-05-03'])
     df = concatenate((data1, data2))
     df.to_csv('temp/crsp_daily_cleaned.csv')
