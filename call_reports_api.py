@@ -6,17 +6,69 @@ import sys
 import io
 import os
 
+
 def variables(bhck=False):
-    vars = {
+
+    # Variable always shows up with RCON prefix (or this is the version we want)
+    vars_rcon = {
         '9224': 'lei',
+        '5597': 'est_unins_deposits',
+        '2200': 'deposits_domestic_office',
         'f045': 'dep_retir_lt250k',
         'f047': 'dep_retir_gt250k',
         'f048': 'num_dep_retir_gt250k',
         'f049': 'dep_nretir_lt250k',
         'f051': 'dep_nretir_gt250k',
         'f052': 'num_dep_nretir_gt250k',
-        '5597': 'est_unins_deposits',
+        '2213': 'liab_fbk_trans',
+        '2236': 'liab_fbk_ntrans',
+        '2216': 'liab_foff_trans',
+        '2377': 'liab_foff_ntrans',
         'a545': 'cons_parent_fdic_cert',
+        'g105': 'total_equity_capital',
+        '0211': 'treas_htm_amort',
+        '0213': 'treas_htm_fval',
+        '1286': 'treas_afs_amort',
+        '1287': 'treas_afs_fval',
+        '3531': 'treas_trading',
+        'ht81': 'retail_mortorig_forsale',
+        'ht82': 'whlsale_mortorig_forsale',
+        'ft04': 'res_mort_sold',
+        'ft05': 'res_mort_hfs_or_hft',
+        '1754': 'totsec_afs_amort',
+        '1771': 'totsec_afs_fval',
+        '1772': 'totsec_htm_amort',
+        '1766': 'ci_loans_nontrading',
+        'f614': 'ci_loans_trading',
+        'j454': 'nbfi_loans',
+        '1545': 'lns_for_purch_carr_sec',
+        'b538': 'cons_cc_loans',
+        'b539': 'cons_oth_revolvc_loans',
+        'k137': 'cons_auto_loans',
+        'k207': 'cons_oth_loans',
+        '2122': 'tot_loansleases',
+        '2123': 'unearnedinc_loansleases',
+    }
+    all_vars = {'rcon'+k: v for k, v in vars_rcon.items()}
+
+    # Variable has RCON prefix for 041 filers, RCFD for 031 filers
+    vars_rcon_rcfd = {
+        '2170': 'assets',
+        'b993': 'repo_liab_ff',
+        'b995': 'repo_liab_oth',
+        '3190': 'oth_borr_money',
+        '3200': 'sub_debt',
+        '2948': 'liabilities',
+        'g105': 'total_equity_capital',
+        '0416': 'pledged_securities',
+        'g378': 'pledged_ll',
+        'jj34': 'htm_securities',
+        '1773': 'afs_debt_securities',
+        '5369': 'll_hfs',
+        'b528': 'll_hfi',
+        '3123': 'll_loss_allowance',
+        'ja22': 'eq_sec_notftrading',
+        '3164': 'mort_servicing_assets',
         'a549': 'gsec_le3m',
         'a550': 'gsec_3m1y',
         'a551': 'gsec_1y3y',
@@ -41,28 +93,6 @@ def variables(bhck=False):
         'a573': 'othll_3y5y',
         'a574': 'othll_5y15y',
         'a575': 'othll_ge15y',
-        'a901': 'merger_acq',
-        '2200': 'deposits_domestic_office',
-        '2170': 'assets',
-        'b993': 'repo_liab_ff',
-        'b995': 'repo_liab_oth',
-        '3190': 'oth_borr_money',
-        '3200': 'sub_debt',
-        '2948': 'liabilities',
-        '2213': 'liab_fbk_trans',
-        '2236': 'liab_fbk_ntrans',
-        '2216': 'liab_foff_trans',
-        '2377': 'liab_foff_ntrans',
-        'ht81': 'retail_mortorig_forsale',
-        'ht82': 'whlsale_mortorig_forsale',
-        'ft04': 'res_mort_sold',
-        'ft05': 'res_mort_hfs_or_hft',
-        'g105': 'total_equity_capital',
-        '0211': 'treas_htm_amort',
-        '0213': 'treas_htm_fval',
-        '1286': 'treas_afs_amort',
-        '1287': 'treas_afs_fval',
-        '3531': 'treas_trading',
         'g300': 'rmbs_htm_amort_gnma',
         'g301': 'rmbs_htm_fval_gnma',
         'g302': 'rmbs_afs_amort_gnma',
@@ -76,48 +106,25 @@ def variables(bhck=False):
         'g310': 'rmbs_afs_amort_oth',
         'g311': 'rmbs_afs_fval_oth',
         'g379': 'rmbs_trading_agency',
-        '1754': 'totsec_afs_amort',
-        '1771': 'totsec_afs_fval',
-        '1772': 'totsec_htm_amort',
-        'jj11': 'loanls_loss_res_amort',
-        'jj19': 'loanls_loss_res_bal',
-        'jj25': 'htmsec_loss_res_bal',
-        '1766': 'ci_loans_nontrading',
-        'f614': 'ci_loans_trading',
-        '2122': 'all_loansls_htm_hfs',
         '3545': 'total_trading_assets',
-        '0416': 'pledged_securities',
-        'g378': 'pledged_ll',
-        '5369': 'll_hfs',
-        'b528': 'll_hfi',
-        '3123': 'll_loss_allowance',
-        'jj34': 'htm_securities',
-        '1773': 'afs_debt_securities',
-        'ja22': 'eq_sec_notftrading',
-        '3164': 'mort_servicing_assets',
-        'j454': 'nbfi_loans',
         'j457': 'unused_comm_ci',
-        'j458': 'unused_comm_nbfi'
+        'j458': 'unused_comm_nbfi',
     }
 
-    all_vars = dict()
     for prefix in ['rcon', 'rcfd']:
         all_vars.update(
-            {prefix+key: '_'.join((prefix, val)) for key, val in vars.items()})
+            {prefix+key: '_'.join((prefix, val)) for key, val in vars_rcon_rcfd.items()})
 
     other = {
-        'rcoa8274': 'rcoa_tier1cap',
+        'rcoa7206': 'rcoa_tier1cap',
+        'rcfa7206': 'rcfa_tier1cap',
         'rcoa7204': 'rcoa_levratio',
+        'rcfa7204': 'rcoa_levratio',
         'rcfn2200': 'deposits_foreign_office',
-        'riadB493': 'net_sec_income',
-        'riadB492': 'net_serv_fees',
-        'rconB538': 'cons_cc_loans',
-        'rconB539': 'cons_oth_revolvc_loans',
-        'rconK137': 'cons_auto_loans',
-        'rconK207': 'cons_oth_loans',
-        'rcon2122': 'tot_loansleases',
-        'rcon2123': 'unearnedinc_loansleases',
-        'rcon1763': 'ci_loans'
+        'riadb493': 'net_sec_income',
+        'riadb492': 'net_serv_fees',
+        'riad4135': 'salaries_and_benefits',
+        'riad4217': 'exp_premises_fa',
     }
     all_vars.update(other)
 
@@ -189,11 +196,13 @@ if __name__ == "__main__":
 
     quarters = [331, 630, 930, 1231]
     years = [2018, 2019, 2020, 2021, 2022, 2023]
-    dates = []
-    for y in years:
-        for q in quarters:
-            dates.append(int(y * 1e4) + q)
-    dates.pop()
+
+    # for y in years:
+    #     for q in quarters:
+    #         dates.append(int(y * 1e4) + q)
+    # dates.pop()
+
+    dates = [20210331]
 
     # dates = [20210331, 20211231, 20220331, 20220630, 20220930,
     # 20221231, 20230331, 20230630, 20230930]
