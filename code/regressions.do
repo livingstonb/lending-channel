@@ -7,12 +7,33 @@ use "${outdir}/cleaned_bank_data.dta", clear;
 do "${codedir}/gen_reg_variables.do";
 
 
-
-/*
 /* Sample selection */
+/* 
 keep if bhclevel;
+*/
 tsset rssdid qdate;
 keep if assets >= 1000;
+keep if bank;
+keep if domestic;
+drop if bhclevel;
+
+#delimit ;
+/* Regressions, change in deposits or originations? */
+gen depvar = D.log_unins_deposits if date == "2023-03-31";
+
+table (colname) (command result) if `date',
+	command(reg depvar L2.(unins_leverage log_assets)
+		)
+	command(reg depvar mtm_2022_loss_pct_assets L2.(log_assets)
+		);
+drop depvar;
+
+
+
+
+
+
+
 
 /* Return regression */
 reg r20230310 unins_lev branch_density mtm_2022_loss_pct_equity
@@ -27,6 +48,8 @@ reg D.log_unins_dep c.r20230310##c.(L2.unins_lev branch_density mtm_2022_loss_pc
 /* First stage, return regression */
 
 keep if assets >= 1000;
+reg svbR coll_unins_debt_ratio mtm_2022_loss_pct_assets
+	 log_assets leverage log_pledgeable_coll if date == "2022-12-31", robust;
 
 duplicates drop rssdid qdate, force;
 tsset rssdid qdate;

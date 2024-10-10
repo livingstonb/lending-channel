@@ -194,18 +194,13 @@ def startswith_anyof(variables, prefixes):
 
 if __name__ == "__main__":
 
-    quarters = [331, 630, 930, 1231]
-    years = [2018, 2019, 2020, 2021, 2022, 2023]
-
-    # for y in years:
-    #     for q in quarters:
-    #         dates.append(int(y * 1e4) + q)
-    # dates.pop()
-
     dates = [20210331]
 
-    # dates = [20210331, 20211231, 20220331, 20220630, 20220930,
-    # 20221231, 20230331, 20230630, 20230930]
+    quarters = [331, 630, 930, 1231]
+    years = [2018, 2019, 2020, 2021, 2022, 2023]
+    dates = [int(y * 1e4) + q for y in years for q in quarters]
+    dates.pop()
+
     bhck = False
 
     qtables = list()

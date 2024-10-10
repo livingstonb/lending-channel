@@ -26,7 +26,7 @@ merge m:1 parentid using "${tempdir}/crsp_daily_cleaned.dta",
 replace name = strtrim(name);
 
 /* Drop (for now) */
-drop dep_* num_* famsec* flien* rcon_* gsec* othll* sub_debt* rcfd_* parent_dt*
+drop rcfd_* parent_dt*
 	bhc;
 drop if rssdid <= 0;
 
