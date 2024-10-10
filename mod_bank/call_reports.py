@@ -11,7 +11,7 @@ import re
 import pandas as pd
 import numpy as np
 import wrds
-
+from mod_aux import functions
 
 class Query(object):
     uname = 'blivingston'
@@ -129,8 +129,8 @@ def assign_topid_up(df, fname_links, attr_files, date):
                         dtype={'#ID_RSSD_PARENT': 'Int64',
                             'ID_RSSD_OFFSPRING': 'Int64'})
 
-    # Keep only active relationships at date
-    date_mask = (links_table['DT_START'] <= date
+    # Keep only active relationships valid at date
+    date_mask = (links_table['DT_START'] <= functions.quarter_start(date)
                  ) & (links_table['DT_END'] >= date)
     links_table = links_table[date_mask]
     links_table = links_table.rename(columns={
@@ -162,8 +162,8 @@ def assign_topid_up(df, fname_links, attr_files, date):
             attr_table = pd.read_csv(fname_attr,
                                       usecols=other_vars+integer_vars,
                                       dtype=set_ints)
-            # Keep only active attributes at date
-            date_mask = (attr_table['DT_OPEN'] <= date
+            # Keep only attributes valid for the entire period
+            date_mask = (attr_table['DT_OPEN'] <= functions.quarter_start(date)
                          ) & (attr_table['DT_END'] >= date)
 
             if parent:
@@ -233,3 +233,14 @@ def account_for_different_ffiec_forms(df):
             df = df.drop('rcfd_'+name, axis=1)
 
     return df
+
+
+def account_for_ma(df, fpath):
+    transf = pd.read_csv(fpath)
+    vars = transf.columns.tolist()
+    transf = transf.rename(columns={n: n.lower() for n in vars})
+
+    min_date = df['date'].min()
+    transf
+
+    df['date'].iloc[0].to_period("Q").end_time.normalize()

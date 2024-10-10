@@ -211,13 +211,17 @@ if __name__ == "__main__":
     df = pd.concat(qtables)
     df = call_reports.account_for_different_ffiec_forms(df)
     losses = mtm.compute_losses(df)
-    df = df.merge(losses, how='left', left_index=True, right_index=True)
+    df = df.merge(losses, how='left', left_on='rssdid', right_on='rssdid')
 
     # Drop repricing variables
     prefixes = ['gsec', 'flien', 'famsec', 'othll']
     repricing_vars = startswith_anyof(df.columns.tolist(), prefixes)
     df = df.drop(repricing_vars, axis=1)
     df = df.drop([k for k in df.columns.tolist() if k.startswith('rmbs_')], axis=1)
+
+    # Mergers/acquisitions
+    fpath = 'data/NIC_transformations.csv'
+    df = call_reports.account_for_ma(df, fpath)
 
     fpath = 'temp'
     if not os.path.exists(fpath):

@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from pandas.tseries.offsets import DateOffset
 
 
 class MTMConfig:
@@ -10,6 +11,7 @@ class MTMConfig:
 
 
 def compute_losses(df):
+    df = df[df.date == MTMConfig.end_date - DateOffset(years=1)]
     dp = get_bond_price_changes()
 
     d_treas_prices = [
