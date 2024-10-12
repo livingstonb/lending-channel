@@ -33,6 +33,10 @@ merge m:1 firm using "${datadir}/hmda_lei_nmls_crosswalk.dta",
 merge m:1 lei using "${datadir}/avery_crosswalk.dta",
 	nogen keep(1 3) keepusing(type22 purcd22 appld22 origd22);
 	
+merge m:1 lei using "${tempdir}/hmda_lender_agg_2022.dta",
+	nogen keep(1 3) keepusing(conforming ltv mu_linc md_linc age_coarse
+		debt_to_income total_lending);
+	
 /* IMB non-affiliated with depository institution */
 keep if (type22 == 40);
 
@@ -70,6 +74,7 @@ rename D530_1 posttax_noi;
 drop A* B* C* D*;
 
 /* Other variables */
+
 gen orig_share = total_orig_comp / total_comp;
 gen lbal_debt_facilities = log(bal_debt_fac);
 gen l_orig_inc = log(total_orig_inc);
@@ -78,41 +83,19 @@ gen balshare = bal_debt_fac / total_orig_inc;
 gen lbalshare = log(balshare);
 gen lorig = log(total_orig_inc);
 
-/* gen liquidity = (unrestr_cash + sec_afs) */
+gen leverage = equity / assets;
 
-/* Look for originators */
-gen orig_fee_share_inc = orig_fees / pretax_noi;
-
-/* Check sample size */
+/* Scatter */
 tsset firm quarter;
-count if q1_2023 & L.q1_2023;
-
-local datevar q1_2023;
-
-gen earnings = D.posttax_noi / L.posttax_noi;
-gen lev = equity / assets;
-
-/* 
-gen coverage = (unrestr_cash + sec_afs + sec_trading) / 
-	(total_nonint_exp / 4 + lt_liab / 4);
-*/
-
+gen coverage = (unrestr_cash + sec_afs + sec_trading)
+	/ (lt_liab + L.total_nonint_exp);
 gen lcoverage = log(coverage);
-replace lcoverage = coverage;
 
-reg lbal_debt_fac total_orig_inc L.bal_debt_fac L.total_orig_inc L2.orig_share;
-reg lbal_debt_fac l_orig_inc L.lbal_debt_fac L.l_orig_inc L2.orig_share
-	if `datevar';
+local initial 2;
+local lags 2;
+reg D.l_orig_inc L2.l_orig_inc L(`initial'/`lags').lorig L2.coverage
+	conforming22 ltv22 mu_linc22 age_coarse22 debt_to_income22 if q2_2023;
+predict resid if q2_2023, residuals;
 
-reg lbalshare L2.lbalshare L2.orig_share L2.lassets L2.coverage if `datevar'
-	& L2.coverage < 20, robust;
-	
-reg D.lorig L2D.lorig L4D.lorig L2.orig_share L2.lassets L4.lcoverage if `datevar'
-	, robust;
-predict resid if `datevar', residuals;
-/*
-keep if (resid >-1) | (resid < 1);
-*/
-twoway scatter resid L2.lcoverage if `datevar';
-
-corr resid L2.lcoverage if `datevar';
+twoway scatter resid L2.lbalshare;
+corr resid L2.lbalshare;
