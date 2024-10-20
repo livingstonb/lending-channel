@@ -1,56 +1,50 @@
-args selected_query tfirst tlast
+clear
 
-* Load packages
+// global project "/Users/brianlivingston/Dropbox/NU/Spring 2024/RA/corelogic"
+
+global project "~/charlie-project/corelogic"
+global codedir "${project}/code"
+global tempdir "${project}/temp"
+global outdir "${project}/output"
+global datadir "${project}/data"
+
+cd "$project"
+cap mkdir "$tempdir"
+cap mkdir "$outdir"
+
+* load packages
 set odbcmgr unixodbc
 
-#delimit ;
-/* Loop over all quarters */
-forvalues yy = 1993/2022 {;
-	forvalues qq = 1/4 {;
-		clear;
-		
-		/* Beginning and end dates for the quarter */
-		if (`qq' == 1) {; local mmdd1 0101; local mmdd2 0331; };
-		else if (`qq' == 2) 	{; local mmdd1 0401; local mmdd2 0630;};
-		else if (`qq' == 3) 	{; local mmdd1 0701; local mmdd2 0930;};
-		else 					{; local mmdd1 1001; local mmdd2 1231;};
-		
-		/* Pre-sample period, ignore */
-		if (`yy'`mmdd1' < `tfirst') {;
-			continue;
-		};
-		/* Post-sample period, break out of loop */
-		if (`yy'`mmdd1' > `tlast') {;
-			continue, break;
-		};
-		
-		/* Correct for odd naming convention in 2018q4 tax tables */
-		if ("`yy'q`qq'" == "2018q4") {;
-			local _s_ "_";
-		};
-		else {;
-			local _s_ " ";
-		};
-		
-		/* Query itself */
-		include "${codedir}/queries/`selected_query'";
+* config
+local tfirst 19930101
+local tlast 20220630
+local selected_query query_within_house.doh
+global datevar recording
 
-		if (_N > 0) {;
-			capture {;
-				rename fips_code fips;
-				rename (apn_unformatted apn_sequence_number) (apn seq);
-				gen dateyq = quarterly("`yy'Q`qq'","YQ");
-				format %tq dateyq;
-				
-				gen year = `yy';
-				gen quarter = `qq';
-			};
-		};
-		else {;
-			di "NO OBSERVATIONS FOR `yy'Q`qq'";
-		};
-		
-		/* These quarterly files will be appended later */
-		save "${tempdir}/transactions`yy'Q`qq'", emptyok replace;
-	};
+* main query, deed table merged with tax tables by quarter
+do "${codedir}/corelogic_legacy_query.do" `selected_query' `tfirst' `tlast'
+
+* append quarters
+do "${codedir}/append_quarters.do" `tfirst' `tlast'
+
+* clean according to new construction indicator
+do "${codedir}/corelogic_new_construction.do"
+
+#delimit ;
+local vars sale_amount year_built
+	land_square_footage universal_building_square_feet;
+foreach var of local vars  {;
+	/* Some of these variables may not exist/were not queried */
+	cap destring `var', force replace;
 };
+	
+local vars sale_amount year_built land_square_footage
+	universal_building_square_feet;
+foreach var of local vars {;
+	/* Some of these variables may not exist/were not queried */
+	cap replace `var' = . if (`var' == 0);
+};
+#delimit cr
+
+local datestr "`=subinstr("_$S_DATE"," ","_",.)'"
+save "${outdir}/merged`datestr'.dta", replace

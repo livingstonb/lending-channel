@@ -17,8 +17,9 @@ replace lei = "" if lei == "0";
 local sumvars est_unins_deposits ins_deposits alt_ins_deposits
 	assets deposits liabilities mtm_2022_loss_level
 	total_equity_capital htm_securities afs_debt_securities
-	eq_sec_notftrading pledged_securities
-	ll_hfs ll_hfi ll_loss_allowance pledged_ll;
+	eq_sec_notftrading pledged_securities unins_deposits
+	ll_hfs ll_hfi ll_loss_allowance pledged_ll unins_debt
+	res_mort_sold;
 	
 local sumexpr;
 foreach var of local sumvars {;

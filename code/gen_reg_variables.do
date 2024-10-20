@@ -5,8 +5,6 @@ gen log_assets = log(assets);
 gen log_deposits = log(deposits);
 
 /* Uninsured debt variables */
-gen unins_deposits = deposits - ins_deposits;
-gen unins_debt = liabilities - ins_deposits;
 gen unins_leverage = unins_debt / assets;
 gen log_unins_deposits = log(unins_dep);
 gen log_unins_debt = log(unins_debt);
@@ -17,6 +15,7 @@ gen comp_firstrepR = r20230501 * r20230502 * r20230503;
 */
 
 gen leverage = assets / total_equity_capital;
+gen lmort_sold = log(res_mort_sold);
 
 /* Collateral */
 gen pledgeable_securities = htm_securities + afs_debt_securities
@@ -32,3 +31,5 @@ gen pledgeable_share = pledgeable_coll /
 		+ ll_hfs + ll_hfi - ll_loss_allowance);
 
 
+/* Bank operations */
+gen lshare_mort_sold = log(res_mort_sold / assets);

@@ -35,6 +35,10 @@ gen ins_deposits = dep_retir_lt250k + dep_nretir_lt250k
 	+ (num_dep_retir_gt250k + num_dep_nretir_gt250k) * 250;
 gen alt_ins_deposits = dep_retir_lt250k + dep_nretir_lt250k;
 
+/* Other variables */
+gen unins_deposits = deposits - ins_deposits;
+gen unins_debt = liabilities - ins_deposits;
+
 /* Save bank level */
 gen bhclevel = 0;
 save "${tempdir}/cleaned_bank_level.dta", replace;
