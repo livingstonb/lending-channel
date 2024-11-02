@@ -10,17 +10,22 @@ def event_stock_returns(fpath, eventnum):
 
     # Dates for normalization and sample
     if eventnum == 1:
-        event_date = pd.to_datetime("3/9/23")
+        event_date = [pd.to_datetime("3/9/23")]
         dates = [pd.to_datetime("1/1/23"), pd.to_datetime("5/1/23")]
         months = [1, 2, 3, 4]
         plot_ylims = [80, 120]
     elif eventnum == 2:
-        event_date = pd.to_datetime("5/1/23")
+        event_date = [pd.to_datetime("5/1/23")]
         dates = [pd.to_datetime("4/1/23"), pd.to_datetime("7/1/23")]
         months = [4, 5, 6]
         plot_ylims = [85, 110]
+    elif eventnum == 'all':
+        event_date = [pd.to_datetime("3/9/23"), pd.to_datetime("5/1/23")]
+        dates = [pd.to_datetime("1/1/23"), pd.to_datetime("6/1/23")]
+        months = [1, 2, 3, 4, 5]
+        plot_ylims = [70, 115]
 
-    stocks_pre_event = stocks[stocks.date == event_date]
+    stocks_pre_event = stocks[stocks.date == pd.to_datetime("1/3/23")]
     for tick in ['SPY', 'KBE']:
         pnorm = stocks_pre_event[stocks_pre_event.ticker == tick].price.values
         prices = stocks[stocks.ticker == tick]['price'].values
@@ -36,7 +41,8 @@ def event_stock_returns(fpath, eventnum):
     for i, tick in enumerate(['SPY', 'KBE']):
         sample = (stocks.ticker == tick) & daterange
         axes[i].plot(stocks[sample].date, stocks[sample].price)
-        axes[i].axvline(x=event_date, color='0.5', linestyle='--')
+        for el in event_date:
+            axes[i].axvline(x=el, color='0.5', linestyle='--')
         axes[i].set_xticks(tick_daterange, tick_labels)
         axes[i].set_ylim(plot_ylims)
 
@@ -52,7 +58,7 @@ def event_stock_returns(fpath, eventnum):
 
 if __name__ == "__main__":
     etf_path = "data/bank_and_sp500_returns_501.csv"
-    eventnum = 1
+    eventnum = 'all'
     stocks = event_stock_returns(etf_path, eventnum)
 
     plt.show()

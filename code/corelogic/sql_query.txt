@@ -1,0 +1,35 @@
+SELECT
+    d."clip",
+	d."fips code",
+	d."transaction batch date",
+	d."mortgage amount",
+	d."mortgage date",
+	d."mortgage recording date",
+	d."mortgage loan type code",
+	d."mortgage term code",
+	d."mortgage term",
+	d."conforming loan indicator",
+	d."construction loan indicator",
+	d."lender company code",
+	d."lender full name",
+	d."mortgage sequence number",
+	t."sale amount",
+	t."sale derived date"
+FROM
+	corelogic2.mortgage as d
+LEFT JOIN corelogic2.property_basic as t
+ON (t."clip"=d."clip")
+    AND (d."transaction batch date"=t."transaction batch date")
+    AND (d."transaction batch sequence number"=t."transaction batch sequence number")
+WHERE
+	(d."primary category code" IN ('A'))
+	AND (d."lender company code" != '')
+	AND (d."fips code" != '')
+	AND (d."clip" != '')
+	AND (d."property indicator code - static" in ('10', '11', '21'))
+	AND (d."mortgage date" BETWEEN '20211001' AND '20211231')
+	AND (d."mortgage term"=30)
+ORDER BY
+	d."mortgage date",
+	d."fips code",
+	d."clip"

@@ -93,7 +93,7 @@ foreach var of local vars_recode {;
 local vars_recode_12 
 */
 
-keep if loan;
+keep if loan == 1;
 rename loan total_lending;
 
 #delimit ;
@@ -108,3 +108,6 @@ foreach var of varlist conforming ltv mu_linc md_linc age_coarse debt_to_income
 	};
 	
 save "${tempdir}/hmda_lender_agg_2022.dta", replace;
+
+/* Instead aggregate by rssdid of parents */
+

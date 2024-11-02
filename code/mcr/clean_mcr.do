@@ -3,14 +3,13 @@
 #delimit ;
 
 /*
-%delimit
-import excel using "${datadir}/mcr.xlsx", clear firstrow
-	datestring(%td);
+#delimit ;
+import excel using "${datadir}/mcr_panel.xlsx", clear firstrow;
 duplicates drop firm quarter, force;
 
-save "${tempdir}/mcr.dta", replace;
+save "${tempdir}/mcr/mcr_panel.dta", replace;
 */
-use "${tempdir}/mcr.dta", clear;
+use "${tempdir}/mcr_panel.dta", clear;
 
 gen date = dofc(quarter);
 format %td date;
@@ -85,17 +84,16 @@ gen lorig = log(total_orig_inc);
 
 gen leverage = equity / assets;
 
+/* Save unique names */
+preserve;
+keep firm name_dataAB;
+rename name_dataAB name;
+duplicates drop firm name, force;
+collapse (first) name, by(firm);
+
+export excel "${tempdir}/mcr_nonbank_nmls_ids.xlsx", replace firstrow(variables);
+restore;
+
 /* Scatter */
-tsset firm quarter;
-gen coverage = (unrestr_cash + sec_afs + sec_trading)
-	/ (lt_liab + L.total_nonint_exp);
-gen lcoverage = log(coverage);
 
-local initial 2;
-local lags 2;
-reg D.l_orig_inc L2.l_orig_inc L(`initial'/`lags').lorig L2.coverage
-	conforming22 ltv22 mu_linc22 age_coarse22 debt_to_income22 if q2_2023;
-predict resid if q2_2023, residuals;
 
-twoway scatter resid L2.lbalshare;
-corr resid L2.lbalshare;

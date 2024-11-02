@@ -1,16 +1,18 @@
 
 
-use "${tempdir}/cleaned_bank_data_corelogic_merged.dta", clear
-merge m:1 lei using "${tempdir}/hmda_lender_agg_2022.dta", nogen keep(1 3)
-gen event = period - 5
+#delimit ;
+use "${tempdir}/cleaned_bank_data_corelogic_merged.dta", clear;
 
-keep if !missing(rssdid, period, lent)
+/* Merge in 2022 HMDA variables */
+merge m:1 lei using "${tempdir}/hmda_lender_agg_2022.dta", nogen keep(1 3);
 
-keep if nloans > 3
+keep if !missing(rssdid, period, lent);
 
-gen llent = log(lent)
-gen lassets = log(assets)
-gen lnloans = log(nloans)
+keep if nloans > 3;
+
+gen llent = log(lent);
+gen lassets = log(assets);
+gen lnloans = log(nloans);
 
 #delimit ;
 xtile qtile_bdensity = branch_density if !missing(llent), nquantiles(3);
@@ -39,10 +41,11 @@ collapse (mean) llent, by(qtile_bdensity period);
 xtset qtile_bdensity period ;
 gen dllent = llent;
 
-#delimit
+#delimit ;
 twoway  (line dllent period if qtile_bdensity == 1)
 	(line dllent period if qtile_bdensity == 2)
 	(line dllent period if qtile_bdensity == 3),
+	tline(2022m3) tline(2023m3)
 	legend(label(1 "Lowest") label(2 "Middle") label(3 "Highest (least run-prone)"))
 	bgcolor(white) graphregion(color(white))
 	ytitle("Mean log lending, monthly")

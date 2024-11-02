@@ -1,5 +1,6 @@
 
 global projdir "/Users/brianlivingston/Dropbox/NU/Projects/svb-shock"
+// global projdir "D:\Dropbox\NU\Projects\svb-shock"
 global datadir "${projdir}/data"
 global codedir "${projdir}/code"
 global tempdir "${projdir}/temp"
@@ -7,6 +8,9 @@ global outdir "${projdir}/output"
 
 
 #delimit ;
+
+/* Clean CPI */
+do "${codedir}/clean_cpi.do";
 
 /* Call reports */
 do "${codedir}/clean_call_reports.do";

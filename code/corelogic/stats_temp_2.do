@@ -3,77 +3,121 @@
 
 use "${tempdir}/cleaned_bank_data_corelogic_merged.dta", clear
 
-// gen ddate = dofw(wdate)
-// format %td ddate
-// gen month = month(ddate)
-// gen week = week(ddate)
 
-/* 
-gen day = day(ddate)
-gen week = mod(week(ddate), 4)
-*/
-
-// keep if bank & domestic
 merge m:1 lei using "${tempdir}/hmda_lender_agg_2022.dta", nogen keep(1 3)
 
-// gen event = wdate - weekly("2023w10", "YW")
-gen event = period - 5
+local binary_event_indicator 0
 
-keep if !missing(rssdid, period, lent)
-xtset rssdid period
+/* Choose event. Variable svb_week is -2 for 2 weeks before SVB failure, -1 for
+week before, 0 for week of (week starting 3/9), 1 for week after, etc.
+***** options are svb_week OR fr_week */
+local event svb_week
 
-keep if nloans > 4
+if `binary_event_indicator' {
+	// Two weeks before is pre-event
+	gen post = 0 if inrange(svb_week, -2, -1)
+	// Weeks 2-3 after is post
+	replace post = 1 if inrange(svb_week, 1, 2)
+}
+else {
+	
+	gen post = 0 if inrange(svb_week, 1, 2)
+	replace post = -1 if inrange(svb_week, -2, -1)
+	replace post = -2 if inrange(svb_week, -4, -3)
+	replace post = -3 if inrange(svb_week, -6, -5)
+	replace post = 1 if inrange(svb_week, 3, 4)
+	replace post = 2 if inrange(svb_week, 5, 6)
+	
+	/*
+	gen post = .
+	forvalues t = -4/4 {
+		replace post = `t' if inlist(svb_week, `t')
+	}
+	*/
+}
 
-gen llent = log(lent)
-gen lassets = log(assets)
-gen lnloans = log(nloans)
-
-drop if event > 3
-tab event, gen(d_event)
+keep if !missing(rssdid, post, lent)
 
 
-gen post = (event >= 1) if !missing(event)
+#delimit ;
 
+/* More aggregation */
+collapse (sum) lent (sum) nloans (first) branch_density
+	(first) assets (first) unins_debt (first) mtm_2022_loss_pct_equity
+	(first) debt_to_income22 age_coarse22 conforming22, by(rssdid post);
+	
+keep if nloans > 2;
+
+bysort rssdid: gen N = _N;
+keep if N == 6;
+
+
+gen llent = log(lent);
+gen lassets = log(assets);
+gen lnloans = log(nloans);
+gen unins_leverage = unins_debt / assets;
+gen lbranch_density = log(branch_density);
+
+xtset rssdid post;
+
+/*
 #delimit ;
 xtile qtile_bdensity = branch_density if !missing(llent), nquantiles(3);
 /* recode qtile_bdensity (1=0) (3=1) (2=.); */
-replace qtile_bdensity = qtile_bdensity - 2;
+ /* replace qtile_bdensity = qtile_bdensity - 2; */
+gen dllent = D.llent;
 
-
+/*
 do "${codedir}/gen_reg_variables.do";
+*/
+
 
 xtile qtile_unins_leverage = unins_leverage if !missing(llent), nquantiles(3);
 /* recode qtile_unins_leverage (1=0) (3=1) (2=.); */
 
-	
-#delimit ;
-xtreg llent d_event2-d_event4 d_event5-d_event8
-	c.post#c.(lassets debt_to_income22 age_coarse22 conforming22)
-	c.( branch_density)#c.(d_event2-d_event4 d_event5-d_event8)
-	, fe vce(robust);
-	
+/* NEED TO THINK OF APPROPRIATE CONTROLS */
+/* Contamination of control group? */
 
-#delimit ;
-xtreg llent d_event2-d_event4 d_event5-d_event8
-	c.post#c.( lassets debt_to_income22 age_coarse22 conforming22
-	unins_leverage )
-	, fe vce(robust);
+/* bysort rssdid: keep if _N == 7; */
+*/
 
-keep if bank;
-keep if inlist(period, 7, 4);
-replace post = (period == 7);
-xtreg llent post c.post#c.(lassets
-	debt_to_income22 age_coarse22 conforming22
-	lshare_mort_sold qtile_bdensity
-	unins_debt_net_of_coll), fe vce(robust);
+xtset rssdid post;
 
-xtreg llent post c.post#c.(lassets
-	debt_to_income22 age_coarse22 conforming22
-	lshare_mort_sold qtile_bdensity
-	) c.post#c.lassets#c.qtile_bdensity, fe vce(robust);
+
+if `binary_event_indicator' {;
+	#delimit ;
+	xtreg llent post i.post#c.( debt_to_income22 conforming22 lassets age_coarse22)
+		i.post#c.unins_leverage, fe vce(robust);
+};
+else {;
+	#delimit ;
+	replace post = post + 3;
+	xtset rssdid post;
+	xtreg llent
+		c.post#c.(lassets)
+		ib0.post##c.( branch_density)
+		, fe vce(robust);
+};
 
 /*
-xtreg llent
-	c.branch_density#i.post L(1/4).llent, fe vce(robust);
+#delimit
+xtdidregress (llent debt_to_income22 conforming22 lassets age_coarse22)
+	(unins_leverage, continuous), group(rssdid) time(post);
+ */
+ 
+/*
+ #delimit ;
+xtreg llent i(0/5).post c.post#c.( debt_to_income22 conforming22 lassets age_coarse22)
+	i(0/4).post#c.( branch_density), fe vce(robust);
 */
-// This lag is too recent (last week)
+
+/*
+replace post = post + 2;
+tab post, gen(dpost);
+xtset rssdid post;
+#delimit ;
+xtreg llent i.post c.post#c.(lassets debt_to_income22 age_coarse22 conforming22)
+	c.(dpost1-dpost6)#c.branch_density, fe vce(robust);
+
+*/
+

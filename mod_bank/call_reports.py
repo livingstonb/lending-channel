@@ -151,7 +151,14 @@ def assign_topid_up(df, fname_links, attr_files, date):
                             'ID_RSSD_OFFSPRING': 'Int64'})
 
     # Keep only active relationships valid at date
-    date_mask = (links_table['DT_START'] <= functions.quarter_start(date)
+    date = pd.to_datetime(f'{date}')
+    links_table['DT_START'] = links_table['DT_START'].where(
+        links_table['DT_START'] != 0, 19000101)
+    links_table['DT_END'] = links_table['DT_END'].where(
+        links_table['DT_END'] < 99991231, 20501231)
+    for var in ['DT_START', 'DT_END']:
+        links_table[var] = pd.to_datetime(links_table[var].apply(lambda x: f'{x} 00:00:00'))
+    date_mask = (links_table['DT_START'] <= functions.quarter_start_value(date)
                  ) & (links_table['DT_END'] >= date)
     links_table = links_table[date_mask]
     links_table = links_table.rename(columns={
@@ -183,8 +190,15 @@ def assign_topid_up(df, fname_links, attr_files, date):
             attr_table = pd.read_csv(fname_attr,
                                       usecols=other_vars+integer_vars,
                                       dtype=set_ints)
+            attr_table['DT_OPEN'] = attr_table['DT_OPEN'].where(
+                attr_table['DT_OPEN'] != 0, 19000101)
+            attr_table['DT_END'] = attr_table['DT_END'].where(
+                attr_table['DT_END'] < 99991231, 20501231)
+            for var in ['DT_OPEN', 'DT_END']:
+                attr_table[var] = pd.to_datetime(
+                    attr_table[var].apply(lambda x: f'{x} 00:00:00'))
             # Keep only attributes valid for the entire period
-            date_mask = (attr_table['DT_OPEN'] <= functions.quarter_start(date)
+            date_mask = (attr_table['DT_OPEN'] <= functions.quarter_start_value(date)
                          ) & (attr_table['DT_END'] >= date)
 
             if parent:
@@ -250,7 +264,7 @@ def account_for_different_ffiec_forms(df):
     rcfd_names = strip_prefixed(rcfd_list, 'rcfd_')
     for name in rcon_names:
         if name in rcfd_names:
-            df[name] = df[name].mask(df.form == 31, df['rcfd_'+name])
+            df[name] = df[name].mask(df.form == '031', df['rcfd_'+name])
             df = df.drop('rcfd_'+name, axis=1)
 
     return df
@@ -276,14 +290,15 @@ def account_for_ma(df, fpath):
     selection = transf[['event_predecessor', 'quarter', 'trnsfm_cd']]
     selection = selection.drop_duplicates(sel_idx)
     selection = selection.rename({'trnsfm_cd': 'event_was_predecessor_cd'})
+    df = df.reset_index()
     df = pd.merge(df, selection, left_on=['rssdid', 'date'], right_on=sel_idx, how='left')
-    df = df.drop(sel_idx)
+    df = df.drop(sel_idx, axis=1)
 
     # Merge successor events
     sel_idx = ['event_successor', 'quarter']
     selection = transf[sel_idx].drop_duplicates(sel_idx)
     selection['event_was_successor'] = 1
     df = pd.merge(df, selection, left_on=['rssdid', 'date'], right_on=sel_idx, how='left')
-    df = df.drop(sel_idx)
+    df = df.drop(sel_idx, axis=1)
 
     return df

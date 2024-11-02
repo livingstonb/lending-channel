@@ -46,6 +46,7 @@ save "${tempdir}/cleaned_bank_level.dta", replace;
 /* Aggregate to BHC */
 do "${codedir}/aggregate_bhc.do";
 gen bhclevel = 1;
+replace parentid = rssdid if bhclevel == 1;
 save "${tempdir}/cleaned_bhc_level.dta", replace;
 
 /* Append */
