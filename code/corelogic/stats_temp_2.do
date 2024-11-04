@@ -46,7 +46,7 @@ collapse (sum) lent (sum) nloans (first) branch_density
 	(first) assets (first) unins_debt (first) mtm_2022_loss_pct_equity
 	(first) debt_to_income22 age_coarse22 conforming22, by(rssdid post);
 	
-keep if nloans > 2;
+keep if nloans > 5;
 
 bysort rssdid: gen N = _N;
 keep if N == 6;

@@ -2,6 +2,26 @@
 
 #delimit ;
 
+/* Read in WLOC */
+import excel using "${datadir}/mcr/wloc_data.xlsx", clear firstrow;
+
+gen pct_usage = usage / limit;
+gen nlines = 1;
+
+collapse (sum) nlines limit available usage
+	(mean) mu_limit=limit mu_available=available mu_usage=usage mu_pct_usage=pct_usage
+	(p50) med_limit=limit med_available=available med_usage=usage med_pct_usage=pct_usage
+	(sd) sd_limit=limit sd_available=available sd_usage=usage sd_pct_usage=pct_usage,
+		by(firm quarter);
+
+gen rel_sd_available = sd_available / mu_available;
+gen rel_sd_usage = sd_usage / mu_usage;
+gen rel_sd_limit = sd_limit / mu_limit;
+
+tempfile wlocs;
+save "`wlocs'", replace;
+
+
 /*
 #delimit ;
 import excel using "${datadir}/mcr_panel.xlsx", clear firstrow;
@@ -10,6 +30,7 @@ duplicates drop firm quarter, force;
 save "${tempdir}/mcr/mcr_panel.dta", replace;
 */
 use "${tempdir}/mcr_panel.dta", clear;
+merge 1:1 firm quarter using "`wlocs'", keep(1 3);
 
 gen date = dofc(quarter);
 format %td date;
@@ -36,9 +57,6 @@ merge m:1 lei using "${tempdir}/hmda_lender_agg_2022.dta",
 	nogen keep(1 3) keepusing(conforming ltv mu_linc md_linc age_coarse
 		debt_to_income total_lending);
 	
-/* IMB non-affiliated with depository institution */
-keep if (type22 == 40);
-
 sort firm date;
 
 gen servicing_fees = C500_1 + C510_1;
@@ -72,6 +90,13 @@ rename D530_1 posttax_noi;
 
 drop A* B* C* D*;
 
+/* Listed companies */
+gen listed = 0;
+local public 330511 15622 3030 1071 2285 128231 3274 174457 7706;
+foreach firmno of local public {;
+	replace listed = 1 if firm == `firmno';
+};
+
 /* Other variables */
 
 gen orig_share = total_orig_comp / total_comp;
@@ -84,12 +109,20 @@ gen lorig = log(total_orig_inc);
 
 gen leverage = equity / assets;
 
+save "${tempdir}/mcr_cleaned.dta", replace
+
 /* Save unique names */
 preserve;
+
+/* IMB non-affiliated with depository institution */
+keep if (type22 == 40);
+
 keep firm name_dataAB;
 rename name_dataAB name;
 duplicates drop firm name, force;
 collapse (first) name, by(firm);
+
+
 
 export excel "${tempdir}/mcr_nonbank_nmls_ids.xlsx", replace firstrow(variables);
 restore;
