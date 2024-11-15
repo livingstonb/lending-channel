@@ -96,13 +96,16 @@ local vars_recode_12
 keep if loan == 1;
 rename loan total_lending;
 
+/* For banks */
+
+
 #delimit ;
-collapse conforming ltv (mean) mu_linc=log_income
-	(p50) md_linc=log_income (mean) age_coarse debt_to_income
+collapse (mean) conforming ltv (mean) mu_linc=log_income
+	(mean) age_coarse debt_to_income
 	interest_only (sum) total_lending [fweight=loan_amount], by(lei);
 
 #delimit ;
-foreach var of varlist conforming ltv mu_linc md_linc age_coarse debt_to_income
+foreach var of varlist conforming ltv mu_linc age_coarse debt_to_income
 	interest_only total_lending {;
 		rename `var' `var'22;
 	};

@@ -12,10 +12,22 @@ global outdir "${projdir}/output"
 /* Clean CPI */
 do "${codedir}/clean_cpi.do";
 
-/* Call reports */
+/* HMDA */
+do "${codedir}/clean_hmda.do";
+
+/* Corelogic */ #delimit ;
+do "${codedir}/corelogic/corelogic_aggregates.do";
+
+/* Call reports, bank level */ #delimit ;
 do "${codedir}/clean_call_reports.do";
 
-/* Summary of deposits */
+/* Aggregate to BHC-level */
+do "${codedir}/aggregate_bhc.do";
+
+/* Aggregate Corelogic to BHC-level */
+/* do "${codedir}/aggregate_corelogic_bhc.do"; */
+
+/* Summary of deposits */ #delimit ;
 do "${codedir}/clean_sod.do";
 
 /* CRSP daily */
@@ -36,6 +48,19 @@ drop if rssdid <= 0;
 /* Save */
 cap mkdir "${outdir}";
 save "${outdir}/cleaned_bank_data.dta", replace;
+
+
+/*************************/
+/* MCR */
+
+do "${codedir}/mcr/clean_mcr.do";
+do "${codedir}/mcr/link_nmls_rssdid.do";
+
+#delimit ;
+use "${tempdir}/mcr_cleaned.dta", clear;
+merge 1:1 firm qdate using "${tempdir}/nmls_wloc_aggregates.dta", nogen
+	keep(3);
+
 
 /** ****** ** ** */
 /* Merge with call reports */

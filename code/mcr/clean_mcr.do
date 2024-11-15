@@ -38,6 +38,7 @@ drop quarter;
 
 gen quarter = qofd(date);
 format %tq quarter;
+rename quarter qdate;
 
 gen q4_2023 = (date == mdy(10, 1, 2023));
 gen q3_2023 = (date == mdy(7, 1, 2023));
@@ -54,7 +55,7 @@ merge m:1 lei using "${datadir}/avery_crosswalk.dta",
 	nogen keep(1 3) keepusing(type22 purcd22 appld22 origd22);
 	
 merge m:1 lei using "${tempdir}/hmda_lender_agg_2022.dta",
-	nogen keep(1 3) keepusing(conforming ltv mu_linc md_linc age_coarse
+	nogen keep(1 3) keepusing(conforming ltv mu_linc age_coarse
 		debt_to_income total_lending);
 	
 sort firm date;
@@ -71,6 +72,8 @@ rename B010 bal_debt_fac;
 rename B060 adv_fhlb;
 rename B070 comm_paper;
 rename B080 payables_to_related;
+rename B090 payables_to_unrelated;
+rename B140 oth_lt_payables_to_unrelated;
 rename B217 current_liab;
 rename B219 lt_liab;
 rename B220 liab;
@@ -81,6 +84,7 @@ rename C100_1 warehousing_int;
 rename C210_1 orig_fees;
 rename C260_1 total_orig_inc;
 rename C650_1 total_serv_noni_income;
+rename C800_1 total_gross_income;
 
 rename D070_1 total_orig_comp;
 rename D180_1 total_comp;
@@ -107,9 +111,11 @@ gen balshare = bal_debt_fac / total_orig_inc;
 gen lbalshare = log(balshare);
 gen lorig = log(total_orig_inc);
 
+gen liquidassets = unrestr_cash + sec_afs + sec_trading;
+
 gen leverage = equity / assets;
 
-save "${tempdir}/mcr_cleaned.dta", replace
+save "${tempdir}/mcr_cleaned.dta", replace;
 
 /* Save unique names */
 preserve;
@@ -117,10 +123,14 @@ preserve;
 /* IMB non-affiliated with depository institution */
 keep if (type22 == 40);
 
+/*
 keep firm name_dataAB;
 rename name_dataAB name;
 duplicates drop firm name, force;
 collapse (first) name, by(firm);
+*/
+
+
 
 
 
@@ -130,3 +140,108 @@ restore;
 /* Scatter */
 
 
+
+/* Balance sheet shares */
+/* Read in WLOC */
+#delimit 
+import excel using "${datadir}/mcr/wloc_data.xlsx", clear firstrow;
+
+drop if usage < 0;
+drop if usage > limit;
+
+gen pct_usage = usage / limit;
+gen nlines = 1;
+
+collapse (sum) limit available usage, by(firm quarter);
+
+gen date = dofc(quarter);
+format %td date;
+drop quarter;
+
+gen quarter = qofd(date);
+format %tq quarter;
+rename quarter qdate;
+drop date;
+
+tempfile wlocs;
+save "`wlocs'", replace;
+
+/* */ #delimit ;
+use "${tempdir}/mcr_cleaned.dta", clear;
+keep if (type22 == 40);
+
+drop usage limit available;
+merge 1:1 firm qdate using "`wlocs'", nogen keep(1 3);
+
+drop if usage < 0;
+drop if usage > limit;
+gen pct_usage = usage / limit;
+
+gen share_wloc_facilities = usage / bal_debt_fac;
+replace share_wloc_facilities = 1 if (bal_debt_fac == 0) & (usage == 0);
+
+local to_scale
+	unrestr_cash sec_afs sec_trading msr assets bal_debt_fac comm_paper
+	payables_to_related current_liab adv_fhlb lt_liab liab common_stock equity
+	orig_fees total_orig_inc total_serv_noni_income total_orig_comp total_comp
+	total_nonint_exp pretax_noi posttax_noi warehousing_int;
+foreach var of local to_scale {;
+	replace `var' = `var' * 1000 if inrange(share_wloc_facilities, 900, 1100);
+	replace share_wloc_facilities = share_wloc_facilities / 1000
+		if inrange(share_wloc_facilities, 900, 1100);
+};
+
+drop if inrange(share_wloc_facilities, 2, 900);
+drop if share_wloc_facilities > 1100;
+replace usage = bal_debt_fac if inrange(share_wloc_facilities, 1.001, 2);
+
+replace share_wloc_facilities = usage / bal_debt_fac;
+
+gen other_st_liab = liab - usage - lt_liab;
+gen wloc_liab = usage;
+
+#delimit ;
+collapse (sum) wloc_liab assets other_st_liab lt_liab equity unrestr_cash
+	liab bal_debt_fac current_liab payables_to_related
+	total_gross_income warehousing_int liquidassets limit
+	pretax_noi (p50) med_equity=equity med_liquid=liquidassets, by(qdate);
+
+gen share_cash = unrestr_cash / assets;
+gen share_liquid = liquidassets / assets;
+
+gen share_wloc = wloc_liab / assets;
+gen share_st_debt = other_st_liab / assets;
+gen share_lt_debt = lt_liab / assets;
+gen share_equity = equity / assets;
+
+/*
+gen x1_wloc = share_wloc;
+gen x2_oth_st_debt = l1 + share_st_debt;
+gen l3 = l2 + share_lt_debt;
+gen a4 = l3 + share_equity;
+
+gen y1 = wloc_liab / liab;
+gen y2 = other_st_liab / liab;
+gen y3 = lt_liab / liab;
+gen y4 = 1;
+*/
+#delimit ;
+
+gen z0 = wloc_liab / assets;
+gen z1 = bal_debt_fac  / assets;
+gen z2 = (current_liab - bal_debt_fac) / assets;
+gen z3 = (current_liab + lt_liab) / assets;
+gen z4 = z3 + equity / assets;
+
+gen payables_related_share = payables_to_related / assets;
+
+gen warehouseintshare = warehousing_int / total_gross_income;
+
+/* REMAKE TIM PLOT, but with:
+	(1) check if external ST notes large and worth including. Include CP with it.
+		Proxy for ST bank loans.
+	(2) check if oth_lt_payables_to_unrelated worth incl as proxy for LT bank loans
+	(3)
+*/
+
+twoway (line z1 qdate) (line z2 qdate) (line z3 qdate) (line z4 qdate);

@@ -84,13 +84,21 @@ di usage[2] / (usage[2] + usage[1]);
 drop if missing(rssdid);
 drop name_stub ddate NameID;
 
-keep if qdate == quarterly("2022q4", "YQ");
 keep firm limit available usage rssdid qdate;
 
-/* Aggregate BHCs lending to same firm across multiple BHC subsidiaries */
+/* FOR NOW DROP THESE */
+drop if usage < 0;
+
+/* Aggregate bank lending to same firm */
 collapse (sum) limit (sum) available (sum) usage, by(rssdid firm qdate);
 
-/* Collapse on rssdid to do bank-level analysis */
+/* Save at firm level */
+preserve;
+collapse (sum) limit available usage, by(firm qdate);
+save "${tempdir}/nmls_wloc_aggregates.dta", replace;
+restore;
+
+/* Collapse on rssdid to do bank-level analysis */ #delimit ;
 collapse (count) wloc_num_recipients=firm
 	(sum) wloc_total_limit=limit
 	(mean) wloc_avg_limit=limit
@@ -103,14 +111,15 @@ collapse (count) wloc_num_recipients=firm
 	(sd) wloc_sd_usage=usage, by(rssdid qdate);
 
 merge 1:m rssdid qdate using "${outdir}/cleaned_bank_data.dta",
-	nogen keep (1 2 3);
+	nogen keep(1 2 3 4);
 	
 
 keep if qdate == quarterly("2022q4", "YQ");
 keep if bhclevel == 1;
 
-drop v1 form est_unins_deposits dep_retir_lt250k dep_retir_gt250k num_dep_retir_gt250k dep_nretir_lt250k dep_nretir_gt250k num_dep_nretir_gt250k totsec_afs_amort ci_loans_nontrading nbfi_loans lns_for_purch_carr_sec cons_oth_loans repo_liab_ff htm_securities afs_debt_securities ll_hfs ll_hfi ll_loss_allowance eq_sec_notftrading liab_fbk_trans liab_fbk_ntrans liab_foff_trans liab_foff_ntrans cons_parent_fdic_cert treas_htm_amort treas_htm_fval treas_afs_amort treas_afs_fval treas_trading retail_mortorig_forsale whlsale_mortorig_forsale res_mort_hfs_or_hft totsec_afs_fval totsec_htm_amort ci_loans_trading cons_oth_revolvc_loans unearnedinc_loansleases repo_liab_oth oth_borr_money sub_debt unused_comm_ci unused_comm_nbfi rcoa_tier1cap rcoa_levratio net_sec_income net_serv_fees salaries_and_benefits exp_premises_fa parentid parent_chtr_type_cd parent_insur_pri_cd parent_member_fhlbs parentname parent_cntry_inc_cd parent_id_lei member_fhlbs lei mtm_2022_loss_level trnsfm_cd event_was_successor year alt_ins_deposits cntry_inc_cd sod_parentid market_cap;
+drop v1 form est_unins_deposits dep_retir_lt250k dep_retir_gt250k num_dep_retir_gt250k dep_nretir_lt250k dep_nretir_gt250k num_dep_nretir_gt250k totsec_afs_amort ci_loans_nontrading nbfi_loans lns_for_purch_carr_sec cons_oth_loans repo_liab_ff htm_securities afs_debt_securities ll_hfs ll_hfi ll_loss_allowance eq_sec_notftrading liab_fbk_trans liab_fbk_ntrans liab_foff_trans liab_foff_ntrans cons_parent_fdic_cert treas_htm_amort treas_htm_fval treas_afs_amort treas_afs_fval treas_trading retail_mortorig_forsale whlsale_mortorig_forsale res_mort_hfs_or_hft totsec_afs_fval totsec_htm_amort ci_loans_trading cons_oth_revolvc_loans unearnedinc_loansleases repo_liab_oth oth_borr_money sub_debt unused_comm_ci unused_comm_nbfi rcoa_tier1cap rcoa_levratio net_sec_income net_serv_fees salaries_and_benefits exp_premises_fa parentid parent_chtr_type_cd parent_insur_pri_cd parent_member_fhlbs parentname parent_cntry_inc_cd parent_id_lei member_fhlbs lei mtm_2022_loss_level trnsfm_cd event_was_successor year alt_ins_deposits sod_parentid market_cap;
 
+#delimit ;
 gen provides_wloc = !missing(wloc_total_limit);
 gen unins_leverage = unins_debt / assets;
 gen leverage = total_equity_capital / assets;
