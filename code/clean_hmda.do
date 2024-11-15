@@ -1,15 +1,18 @@
+args year;
 
+/* Aggregate public HMDA data by lender, for given year */
 
 #delimit ;
 
-use "${datadir}/hmda2022.dta", clear;
+/* File saved as hmda[yyyy].dta in data folder */
+use "${datadir}/hmda`year'.dta", clear;
 
 keep action_taken combined_loan_to_value_ratio open_end_line_of_credit
 	loan_term hoepa_status conforming_loan_limit interest_only_payment
 	income debt_to_income_ratio applicant_age lei derived_dwelling_category
 	loan_amount;
 
-/* Action taken:
+/* Action taken variable:
 	(1) Loan originated
 	(2) Application approved but not accepted
 	(3) Application denied
@@ -23,17 +26,20 @@ drop if inlist(action_taken, 4, 6, 8);
 keep if inlist(derived_dwelling_category, "Single Family (1-4 Units):Site-Built",
 	"Single Family (1-4 Units):Manufactured");
 
+/* LTV */
 replace combined_loan_to_value_ratio = ""
 	if (combined_loan_to_value_ratio == "NA");
 destring combined_loan_to_value_ratio, force replace;
 rename combined_loan_to_value_ratio ltv;
 
+/* Indicator for sample loan type */
 gen loan = 1 if (action_taken == 1);
 replace loan = 0 if (open_end_line_of_credit != 2);
 #delimit ;
 replace loan = 0 if (loan_term != "360");
 drop loan_term;
 
+/* High cost loan */
 replace hoepa_status = 0 if (hoepa_status == 2);
 replace hoepa_status = . if (hoepa_status == 3);
 rename hoepa_status high_cost;
@@ -83,34 +89,20 @@ replace age_group = 3 if inlist(age_fine, 5);
 replace age_group = 4 if inlist(age_fine, 6, 7);
 rename age_group age_coarse;
 
-/*
-local vars_recode_1111 reverse_mortgage
-
-foreach var of local vars_recode {;
-	replace `var' = . if (`var' == 1111);
-};
-
-local vars_recode_12 
-*/
-
+/* Select sample and aggregate according by LEI, mortgage amount-weighted */
 keep if loan == 1;
 rename loan total_lending;
 
-/* For banks */
-
 
 #delimit ;
-collapse (mean) conforming ltv (mean) mu_linc=log_income
-	(mean) age_coarse debt_to_income
-	interest_only (sum) total_lending [fweight=loan_amount], by(lei);
+collapse (mean) conforming ltv age_coarse debt_to_income interest_only
+	(mean) mu_linc=log_income
+	(sum) total_lending [fweight=loan_amount], by(lei);
 
 #delimit ;
 foreach var of varlist conforming ltv mu_linc age_coarse debt_to_income
 	interest_only total_lending {;
-		rename `var' `var'22;
+		rename `var' `var'`year';
 	};
 	
-save "${tempdir}/hmda_lender_agg_2022.dta", replace;
-
-/* Instead aggregate by rssdid of parents */
-
+save "${tempdir}/hmda_lender_agg_`year'.dta", replace;

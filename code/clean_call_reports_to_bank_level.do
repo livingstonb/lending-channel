@@ -58,37 +58,3 @@ clear
 /* Save bank level */
 	gen bhclevel = 0;
 	save "${tempdir}/cleaned_bank_level.dta", replace;
-
-/* Statistics */
-/* drop if assets < 1000000;
-
-merge 1:1 rssdid qdate using "${tempdir}/bhck_for_merge.dta", nogen keep(1 3); */
-
-/* Keep if present in each period */
-/*
-quietly sum qdate;
-scalar tperiods = r(max) - r(min) + 1;
-bysort rssdid: drop if _N < tperiods;
-
-
-
-tsset rssdid qdate;
-gen ldeposits = log(deposits);
-gen dldeposits = d.ldeposits;
-gen lunins = log(est_unins_deposits);
-gen dlunins = d.lunins;
-gen lmort = log(retail_mortorig_forsale);
-gen dlmort = d.lmort;
-
-xtile qtile_bd = dldeposits, nquantiles(5);
-graph bar dlunins, over(qtile_bd) over(qlabel);
-*/
-
-/* Regression */
-
-
-/*
-quietly sum qdate;
-local quarters = r(max) - r(min) + 1;
-bysort rssdid qdate: ;
-*/

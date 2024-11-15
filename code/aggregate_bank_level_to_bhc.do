@@ -19,22 +19,26 @@ replace lei = "" if lei == "0";
 		total_equity_capital htm_securities afs_debt_securities
 		eq_sec_notftrading pledged_securities unins_deposits
 		ll_hfs ll_hfi ll_loss_allowance pledged_ll unins_debt
-		res_mort_sold total_lending;
+		res_mort_sold total_lending2022;
 	
-/* Variables to take weighted mean of */
-	local meanvars conforming22 ltv22 mu_linc22 age_coarse22 debt_to_income22
-		interest_only22;
+/* HMDA Variables to take weighted mean of */
+	local meanvars conforming2022 ltv2022 mu_linc2022 age_coarse2022
+		debt_to_income2022 interest_only2022;
+	foreach var of local meanvars {;
+		replace `var' = `var' * total_lending2022;
+	};
+
 	local sumvars `sumvars' `meanvars';
 
 /* Variables constant within bhc by quarter */
-local firstvars qlabel name date member_fhlbs lei cntry_inc_cd;
+	local firstvars qlabel name date member_fhlbs lei cntry_inc_cd;
 
 /* Collapse */
-keep `sumvars' `firstvars' rssdid qdate;
-collapse (sum) `sumvars' (first) `firstvars', by(rssdid qdate);
+	keep `sumvars' `firstvars' rssdid qdate;
+	collapse (sum) `sumvars' (first) `firstvars', by(rssdid qdate);
 
 foreach var of local meanvars {;
-	replace `var' = `var' / total_lending;
+	replace `var' = `var' / total_lending2022;
 };
 
 /* Mark-to-market losses, percentages */
@@ -46,10 +50,3 @@ gen parentid = rssdid;
 
 append using "${tempdir}/cleaned_bank_level.dta";
 save "${tempdir}/cleaned_bank_bhc_combined.dta", replace;
-
-/* 
-quietly sum qdate;
-gen temp_bdensity = nbranch / deposits * 1e5 if qdate == r(min);
-bysort rssdid: egen branch_density = max(temp_bdensity);
-drop temp_bdensity;
-*/

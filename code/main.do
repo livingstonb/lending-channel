@@ -1,4 +1,5 @@
 
+/* Set directory macros */
 global projdir "/Users/brianlivingston/Dropbox/NU/Projects/svb-shock"
 // global projdir "D:\Dropbox\NU\Projects\svb-shock"
 global datadir "${projdir}/data"
@@ -7,27 +8,34 @@ global tempdir "${projdir}/temp"
 global outdir "${projdir}/output"
 
 
-#delimit ;
+
 
 /* Clean CPI */
+#delimit ;
 do "${codedir}/clean_cpi.do";
 
 /* HMDA */
-do "${codedir}/clean_hmda.do";
+ #delimit ;
+local year 2022;
+do "${codedir}/clean_hmda.do" `year';
 
-/* Corelogic */ #delimit ;
+/* Corelogic */
+#delimit ;
 do "${codedir}/corelogic/corelogic_aggregates.do";
 
-/* Call reports, bank level */ #delimit ;
-do "${codedir}/clean_call_reports.do";
+/* Call reports, bank level */
+ #delimit ;
+do "${codedir}/clean_call_reports_to_bank_level.do";
 
 /* Aggregate to BHC-level */
-do "${codedir}/aggregate_bhc.do";
+ #delimit ;
+do "${codedir}/aggregate_bank_level_to_bhc.do";
 
 /* Aggregate Corelogic to BHC-level */
 /* do "${codedir}/aggregate_corelogic_bhc.do"; */
 
-/* Summary of deposits */ #delimit ;
+/* Summary of deposits */
+#delimit ;
 do "${codedir}/clean_sod.do";
 
 /* CRSP daily */

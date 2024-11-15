@@ -1,7 +1,7 @@
 
 #delimit ;
 
-/* Save csv crsp as dta */
+/* Read CRSP csv, obtained previously from python API as dta */
 import delimited using "${tempdir}/crsp_daily_cleaned.csv", clear;
 rename cap market_cap;
 

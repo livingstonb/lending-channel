@@ -1,11 +1,17 @@
 
 
-/* AGGREGATES TO MONTHLY */
+/* Aggregate corelogic lending, by lender, to multiple frequencies
+	NOTE: Set up to match on RSSDID so any institutions without
+	this indicator, or for which there is no match in crosswalk, will not show
+	up in final dataset
+*/
 
 local agg_bhc 0
 
 #delimit ;
-/* Prepare crosswalk between corelogic lender codes and rssdid */
+/* Prepare crosswalk between corelogic lender codes and rssdid (bank-level only)
+	TODO: Set up BHC matching
+*/
 import excel using "${datadir}/corelogic_company_codes_crosswalk.xlsx",
 	firstrow clear;
 rename corelogic_code lendercompanycode;
@@ -41,8 +47,6 @@ if "`agg_bhc'" == "1" {;
 clear;
 save "${tempdir}/corelogic_aggregated.dta", emptyok replace;
 
-/* 2021q4 2022q1 2022q2 2022q3 2022q4 2023q1 2023q2 */
-local quarters 2022q4 2023q1 2023q2 ;
 forvalues val = 2022/2023 {;
 	/* Import quarter */
 	import delimited using "${datadir}/corelogic_mortgage_`val'.csv",
@@ -73,6 +77,8 @@ forvalues val = 2022/2023 {;
 	
 	/* Use crosswalk to link corelogic lender codes to bank rssdid */
 	merge m:1 lendercompanycode using "`cwalk'", nogen keep(3);
+	
+	/* Different frequencies */
 	local aggvars mdate wdate svb_week fr_week;
 	
 	if "`agg_bhc'" == "1" {;
@@ -85,7 +91,7 @@ forvalues val = 2022/2023 {;
 	merge m:1 lendercompanycode using "`cwalk'", nogen keep(1 3);
 	drop lendercompanycode;
 	
-	/* Aggregate to bank-period */
+	/* Aggregate to bank-period, for each different frequency */
 	foreach var of local aggvars {;
 		preserve;
 		collapse (count) nloans=mortgageamount (sum) lent=mortgageamount
@@ -114,4 +120,4 @@ use "${tempdir}/corelogic_aggregated.dta", clear;
 
 order mdate rssdid lenderfullname lent;
 gsort -mdate -lent;
-save "${tempdir}/corelogic_aggregated.dta", emptyok replace;
+save "${tempdir}/corelogic_aggregated.dta", replace;
