@@ -61,19 +61,5 @@ save "${outdir}/cleaned_bank_data.dta", replace;
 /*************************/
 /* MCR */
 
-do "${codedir}/mcr/clean_mcr.do";
-do "${codedir}/mcr/link_nmls_rssdid.do";
-
-#delimit ;
-use "${tempdir}/mcr_cleaned.dta", clear;
-merge 1:1 firm qdate using "${tempdir}/nmls_wloc_aggregates.dta", nogen
-	keep(3);
-
-
-/** ****** ** ** */
-/* Merge with call reports */
-#delimit ;
-use "${outdir}/cleaned_bank_data.dta", clear;
-drop if bhclevel;
-merge 1:1 rssdid qdate using "${tempdir}/corelogic_aggregated.dta", nogen keep(3);
-
+do "${codedir}/mcr/clean_mcr_panel.do";
+do "${codedir}/mcr/clean_wloc.do";
