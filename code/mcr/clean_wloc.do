@@ -54,12 +54,15 @@
 	save "${tempdir}/bank_name_conversion_cleaned.dta", replace;
 
 /* Read WLOC data to match to banks */
+	#delimit ;
 	import excel using "${datadir}/mcr/wloc_data.xlsx", clear firstrow;
 
 	gen name_stub = "";
 	foreach stub of local stubs {;
-		replace name_stub = `"`stub'"' if
-			(strpos(NameID, `"`stub'"') > 0) & (name_stub == "");
+		
+		replace name_stub = `"`stub'"' if  (strpos(NameID, `"`stub'"') > 0) & (name_stub == "");
+		replace name_stub = `"`stub'"' if NameID == `"`stub'"';
+
 	};
 
 	gen ddate = dofc(quarter);
@@ -112,7 +115,7 @@ collapse (sum) limit available usage, by(rssdid firm qdate);
 	gen unins_leverage = unins_debt / assets;
 	gen leverage = total_equity_capital / assets;
 	
-/* Binary measure of bank shock exposure */
+/* Binary measure of bank shock exposure
 	gen shock = 0;
 	replace shock = 0 if (name == "TEXAS CAPITAL BANCSHARES, INC.");
 	replace shock = 1 if (name == "FIRST HORIZON CORPORATION");
@@ -146,6 +149,33 @@ collapse (sum) limit available usage, by(rssdid firm qdate);
 	replace shock = 1 if (name == "COLUMBIA BANKING SYSTEM, INC.");
 	replace shock = 0 if (name == "BANK OF NEW YORK MELLON CORPORATION, THE");
 	replace shock = 1 if (name == "KEYCORP");
+*/
+
+/* Return terciles */
+quietly _pctile svbR if provides_wloc, p(33 66);
+local Rthreshold1 = `r(r1)';
+local Rthreshold2 = `r(r2)';
+
+/* Estimate if bank was shocked, for unlisted */
+#delimit ;
+cap drop lassets;
+cap drop svbR_hat;
+gen lassets = log(assets);
+reg svbR c.lassets##c.(lassets branch_density unins_leverage leverage
+	mtm_2022_loss_pct_equity);
+predict svbR_hat if missing(svbR), xb;
+replace svbR_hat = svbR if missing(svbR_hat);
+
+gen tercile_svbR = 1 if
+	(svbR_hat <= `Rthreshold1') & (provides_wloc==1);
+replace tercile_svbR = 2 if 
+	inrange(svbR_hat, `Rthreshold1', `Rthreshold2') & (provides_wloc==1);
+replace tercile_svbR = 3
+	if inrange(svbR_hat > `Rthreshold2', .) & (provides_wloc==1);
+replace tercile_svbR = 1 if rssdid == 3076592;
+replace tercile_svbR = 1 if rssdid == 1031449;
+
+drop lassets svbR_hat;
 	
 /* Save */
 	save "${outdir}/wloc_bank_level_aggregates.dta", replace;
