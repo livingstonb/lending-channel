@@ -42,7 +42,9 @@ do "${codedir}/clean_sod.do";
 do "${codedir}/clean_crsp_daily.do";
 
 /* Merges */
+#delimit ;
 use "${tempdir}/cleaned_bank_bhc_combined.dta", clear;
+merge m:1 rssdid using "${tempdir}/sod_2021.dta", nogen keep(1 3);
 merge m:1 rssdid using "${tempdir}/sod_2022.dta", nogen keep(1 3);
 merge m:1 rssdid using "${tempdir}/crsp_daily_cleaned.dta", nogen keep(1 3);
 merge m:1 parentid using "${tempdir}/crsp_daily_cleaned.dta",
@@ -57,9 +59,22 @@ drop if rssdid <= 0;
 cap mkdir "${outdir}";
 save "${outdir}/cleaned_bank_data.dta", replace;
 
+/* Create more bank variables for nonbank exposure measure */
+do "${codedir}/prepare_bank_for_nonbank_merge.do";
 
 /*************************/
 /* MCR */
 
 do "${codedir}/mcr/clean_mcr_panel.do";
 do "${codedir}/mcr/clean_wloc.do";
+
+use "${tempdir}/wloc_panel_cleaned.dta", clear;
+	collapse (sum) limit available usage, by(firm qdate);
+	save "${tempdir}/wloc_nonbank_level_aggregates.dta", replace;
+
+do "${codedir}/mcr/save_wloc_bank_level.do";
+
+
+/*************************/
+/* Combined dataset */
+do "${codedir}/combine_mcr_wloc_bank.do";

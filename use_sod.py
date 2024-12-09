@@ -10,5 +10,5 @@ def use_sod(year):
     df_bank = sod.aggregate_to_bank(df, f"temp/sod_bank_level_{year}.csv")
 
 if __name__ == "__main__":
-    for year in [2022]:
+    for year in [2021]:
         use_sod(year)
