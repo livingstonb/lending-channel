@@ -69,8 +69,6 @@ do "${codedir}/mcr/clean_mcr_panel.do";
 do "${codedir}/mcr/clean_wloc.do";
 
 use "${tempdir}/wloc_panel_cleaned.dta", clear;
-	collapse (sum) limit available usage, by(firm qdate);
-	save "${tempdir}/wloc_nonbank_level_aggregates.dta", replace;
 
 do "${codedir}/mcr/save_wloc_bank_level.do";
 

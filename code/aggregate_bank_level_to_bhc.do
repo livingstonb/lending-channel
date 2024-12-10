@@ -22,7 +22,7 @@ replace lei = "" if lei == "0";
 		res_mort_sold total_lending2022;
 	
 /* HMDA Variables to take weighted mean of */
-	local meanvars conforming2022 ltv2022 mu_linc2022 age_coarse2022
+	local meanvars conforming22 ltv2022 mu_linc2022 age_coarse2022
 		debt_to_income2022 interest_only2022;
 	foreach var of local meanvars {;
 		replace `var' = `var' * total_lending2022;
