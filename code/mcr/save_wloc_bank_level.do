@@ -15,7 +15,11 @@ use "${tempdir}/wloc_panel_cleaned.dta", clear;
 		(sd) wloc_sd_available=available
 		(sum) wloc_total_usage=usage
 		(mean) wloc_avg_usage=usage
-		(sd) wloc_sd_usage=usage, by(rssdid qdate);
+		(sd) wloc_sd_usage=usage
+		(count) count_usage=usage, by(rssdid qdate) cw;
+		
+	gen wloc_l_total_usage = log(wloc_total_usage);
+	replace wloc_l_total_usage = . if count_usage == 0;
 
 /* Merge with cleaned call reports data */
 	merge 1:m rssdid qdate using "${outdir}/cleaned_bank_data.dta",

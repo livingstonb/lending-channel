@@ -29,7 +29,8 @@ replace lei = "" if lei == "0";
 		total_equity_capital htm_securities afs_debt_securities
 		eq_sec_notftrading pledged_securities unins_deposits
 		ll_hfs ll_hfi ll_loss_allowance pledged_ll unins_debt
-		res_mort_sold total_lending22 nloans lent conforming_lent;
+		res_mort_sold total_lending22 nloans lent conforming_lent
+		wloc_l_total_usage;
 	
 /* HMDA Variables to take weighted mean of */
 	local meanvars conforming22 ltv22 mu_linc22 age_coarse22

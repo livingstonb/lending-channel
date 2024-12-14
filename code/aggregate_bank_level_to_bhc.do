@@ -19,13 +19,13 @@ replace lei = "" if lei == "0";
 		total_equity_capital htm_securities afs_debt_securities
 		eq_sec_notftrading pledged_securities unins_deposits
 		ll_hfs ll_hfi ll_loss_allowance pledged_ll unins_debt
-		res_mort_sold total_lending2022;
+		res_mort_sold total_lending22;
 	
 /* HMDA Variables to take weighted mean of */
-	local meanvars conforming22 ltv2022 mu_linc2022 age_coarse2022
-		debt_to_income2022 interest_only2022;
+	local meanvars conforming22 ltv22 mu_linc22 age_coarse22
+		debt_to_income22 interest_only22;
 	foreach var of local meanvars {;
-		replace `var' = `var' * total_lending2022;
+		replace `var' = `var' * total_lending22;
 	};
 
 	local sumvars `sumvars' `meanvars';
@@ -38,7 +38,7 @@ replace lei = "" if lei == "0";
 	collapse (sum) `sumvars' (first) `firstvars', by(rssdid qdate);
 
 foreach var of local meanvars {;
-	replace `var' = `var' / total_lending2022;
+	replace `var' = `var' / total_lending22;
 };
 
 /* Mark-to-market losses, percentages */
