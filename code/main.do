@@ -2,10 +2,7 @@
 /* Directories */
 global projdir "/Users/brianlivingston/Dropbox/NU/Projects/svb-shock"
 // global projdir "D:\Dropbox\NU\Projects\svb-shock"
-global datadir "${projdir}/data"
-global codedir "${projdir}/code"
-global tempdir "${projdir}/temp"
-global outdir "${projdir}/output"
+include "${codedir}/stata_header.doh"
 
 /* Clean CPI */
 #delimit ;
@@ -18,7 +15,7 @@ do "${codedir}/clean_hmda.do" `year';
 
 /* Aggregate bank Corelogic mortgage lending to bank-day level */
 #delimit ;
-do "${codedir}/corelogic/corelogic_aggregates.do";
+do "${codedir}/corelogic/aggregate_corelogic_mortgages_banks.do";
 
 /* Call reports, bank level */
  #delimit ;

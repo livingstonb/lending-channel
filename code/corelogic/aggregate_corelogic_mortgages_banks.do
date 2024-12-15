@@ -6,11 +6,6 @@
 	up in final dataset
 */
 
-local agg_bhc 0
-
-/* Prepare crosswalk between corelogic lender codes and rssdid (bank-level only)
-	TODO: Set up BHC matching
-*/
 #delimit ;
 import excel using "${datadir}/corelogic_company_codes_crosswalk.xlsx",
 	firstrow clear;
@@ -19,28 +14,6 @@ keep lendercompanycode rssdid;
 
 tempfile cwalk;
 save "`cwalk'", replace;
-
-/* 
-/* Crosswalk from bank id to parent id */
-#delimit ;
-use "${outdir}/cleaned_bank_data.dta", clear;
-keep if qlabel == "2022q4";
-keep rssdid parentid;
-drop if parentid < 0;
-replace parentid = rssdid  if missing(parentid);
-duplicates drop rssdid parentid, force;
-
-tempfile rssdid_parent_cwalk;
-save "`rssdid_parent_cwalk'", replace;
-*/
-
-/*
-if "`agg_bhc'" == "1" {;
-	merge 1:1 rssdid using "`rssdid_parent_cwalk'", nogen keep(1 3);
-	drop rssdid;
-	rename parentid rssdid;
-};
-*/
 
 /* Corelogic */
 #delimit ;
@@ -66,37 +39,28 @@ forvalues val = 2022/2023 {;
 	gen date = date(mortgagedate, "YMD");
 	format %td date;
 	
-	/* Deflate using monthly CPI */
-	merge m:1 mdate using "${tempdir}/cpi.dta", nogen keep(1 3);
-	replace mortgageamount = mortgageamount / cpi;
-	gen conformingamt = conformingloanindicator * mortgageamount;
-	
 	/* Use crosswalk to link corelogic lender codes to bank rssdid */
 	merge m:1 lendercompanycode using "`cwalk'", nogen keep(3);
-	
-	/* Different frequencies */
-	local aggvars mdate wdate svb_week fr_week;
-	
-	if "`agg_bhc'" == "1" {;
-		merge m:1 rssdid using "`rssdid_parent_cwalk'", nogen keep(1 3)
-			keepusing(parentid);
-		drop rssdid;
-		rename parentid rssdid;
-	};
-	
-	merge m:1 lendercompanycode using "`cwalk'", nogen keep(1 3);
-	drop lendercompanycode cpi;
+	drop lendercompanycode;
 	
 	/* Collapse to lender-week frequency */
-	drop if missing(rssdid, date);
+	gen conformingamt = conformingloanindicator * mortgageamount;
 	collapse (count) nloans=mortgageamount (sum) lent=mortgageamount
 			conforming_lent=conformingamt
 			(first) lenderfullname, by(rssdid date);
+	replace lenderfullname = . if rssdid == .;
 	
 	/* Append previous years and save again */
 	append using "${tempdir}/corelogic_aggregated.dta";
 	save "${tempdir}/corelogic_aggregated.dta", emptyok replace;
 };
+
+/* Deflate using monthly CPI */
+gen mdate = mofd(date);
+merge m:1 mdate using "${tempdir}/cpi.dta", nogen keep(1 3);
+replace lent = lent / cpi;
+replace conforming_lent = conforming_lent / cpi;
+drop mdate cpi;
 
 order date rssdid lenderfullname lent;
 gsort -date -rssdid;
