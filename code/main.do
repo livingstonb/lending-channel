@@ -1,14 +1,11 @@
 
-/* Set directory macros */
+/* Directories */
 global projdir "/Users/brianlivingston/Dropbox/NU/Projects/svb-shock"
 // global projdir "D:\Dropbox\NU\Projects\svb-shock"
 global datadir "${projdir}/data"
 global codedir "${projdir}/code"
 global tempdir "${projdir}/temp"
 global outdir "${projdir}/output"
-
-
-
 
 /* Clean CPI */
 #delimit ;
@@ -19,7 +16,7 @@ do "${codedir}/clean_cpi.do";
 local year 2022;
 do "${codedir}/clean_hmda.do" `year';
 
-/* Corelogic */
+/* Aggregate bank Corelogic mortgage lending to bank-day level */
 #delimit ;
 do "${codedir}/corelogic/corelogic_aggregates.do";
 

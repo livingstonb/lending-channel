@@ -8,10 +8,10 @@
 
 local agg_bhc 0
 
-#delimit ;
 /* Prepare crosswalk between corelogic lender codes and rssdid (bank-level only)
 	TODO: Set up BHC matching
 */
+#delimit ;
 import excel using "${datadir}/corelogic_company_codes_crosswalk.xlsx",
 	firstrow clear;
 rename corelogic_code lendercompanycode;
@@ -48,27 +48,23 @@ clear;
 save "${tempdir}/corelogic_aggregated.dta", emptyok replace;
 
 forvalues val = 2022/2023 {;
-	/* Import quarter */
+	/* Read year */
 	import delimited using "${datadir}/corelogic_mortgage_`val'.csv",
 		clear;
 	duplicates drop clip fipscode transactionbatchdate, force;
 	replace mortgageamount = mortgageamount / 1000;
+	drop transactionbatchdate transactionbatchsequencenumber
+		mortgagerecordingdate refinanceloanindicator mortgageloantypecode
+		constructionloanindicator constructionloanindicator
+		mortgagesequencenumber;
+		
+	/* Don't need loan identifiers anymore */
+	drop clip fipscode;
 	
 	/* Date variables */
 	tostring mortgagedate, replace;
-
 	gen date = date(mortgagedate, "YMD");
 	format %td date;
-	
-	gen wdate = wofd(date);
-	format %tw wdate;
-	
-	gen mdate = mofd(date);
-	format %tm mdate;
-	
-	/* Put event at beginning of event week */
-	gen svb_week = floor((date - mdy(3,9,2023)) / 7);
-	gen fr_week = floor((date - mdy(5,1,2023)) / 7);
 	
 	/* Deflate using monthly CPI */
 	merge m:1 mdate using "${tempdir}/cpi.dta", nogen keep(1 3);
@@ -89,35 +85,19 @@ forvalues val = 2022/2023 {;
 	};
 	
 	merge m:1 lendercompanycode using "`cwalk'", nogen keep(1 3);
-	drop lendercompanycode;
+	drop lendercompanycode cpi;
 	
-	/* Aggregate to bank-period, for each different frequency */
-	foreach var of local aggvars {;
-		preserve;
-		collapse (count) nloans=mortgageamount (sum) lent=mortgageamount
+	/* Collapse to lender-week frequency */
+	drop if missing(rssdid, date);
+	collapse (count) nloans=mortgageamount (sum) lent=mortgageamount
 			conforming_lent=conformingamt
-			(mean) conforming_share=conformingloanindicator
-			(first) lenderfullname, by(rssdid `var');
-		append using "${tempdir}/corelogic_aggregated.dta";
-		save "${tempdir}/corelogic_aggregated.dta", emptyok replace;
-		restore;
-	};
+			(first) lenderfullname, by(rssdid date);
+	
+	/* Append previous years and save again */
+	append using "${tempdir}/corelogic_aggregated.dta";
+	save "${tempdir}/corelogic_aggregated.dta", emptyok replace;
 };
 
-/*
-/* Aggregate again for loans that show up in different data update */
-foreach var of local aggvars {;
-		preserve;
-		collapse (count) nloans=mortgageamount (sum) lent=mortgageamount
-			(first) lenderfullname, by(rssdid `var');
-		append using "${tempdir}/corelogic_aggregated.dta";
-		save "${tempdir}/corelogic_aggregated.dta", emptyok replace;
-		restore;
-	};
-*/
-	
-use "${tempdir}/corelogic_aggregated.dta", clear;
-
-order mdate rssdid lenderfullname lent;
-gsort -mdate -lent;
+order date rssdid lenderfullname lent;
+gsort -date -rssdid;
 save "${tempdir}/corelogic_aggregated.dta", replace;

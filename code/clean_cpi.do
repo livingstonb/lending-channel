@@ -1,6 +1,5 @@
 /* Reads CPI downloaded from FRED, saves as dta */
 
-
 #delimit ;
 import delimited using "${datadir}/CPIAUCSL.csv", varnames(1) clear;
 gen ddate = date(date, "YMD");

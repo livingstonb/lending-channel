@@ -1,10 +1,15 @@
 args year;
 
-/* Aggregate public HMDA data by lender, for given year */
+/*
+	Aggregates public HMDA data by lender for selected year.
+*/
 
+/*
+	Raw data saved as hmda[yyyy].dta in data folder.
+	HMDA Dynamic National Loan Level Dataset for selected year,
+	download as delimited format resaved as dta.
+ */
 #delimit ;
-
-/* File saved as hmda[yyyy].dta in data folder */
 use "${datadir}/hmda`year'.dta", clear;
 
 keep action_taken combined_loan_to_value_ratio open_end_line_of_credit
