@@ -1,5 +1,24 @@
+"""
+Reads annual FDIC summary of deposits data from csv and aggregates to bank- and bhc-level.
+Used to compute branch density = branches / total deposits and depends on input data
+saved as 'data/sod_06_YYYY.csv' downloaded from the FDIC Bankfind Suite.
+
+Code is expected to be run while working directory is set to main repository directory.
+"""
+
+
 import pandas as pd
 import numpy as np
+
+
+def sod_main(year):
+    sod_filepath = f"data/sod_06_{year}.csv"
+    links_savepath = f"temp/sod_bank_bhc_links_{year}.csv"
+    df = read(sod_filepath, save_links_path=links_savepath)
+
+    df_bhc = aggregate_to_bhc(df)
+    df_bank = aggregate_to_bank(df)
+    return df_bhc, df_bank
 
 
 def read(fname, include_hcr=True, save_links_path=None):
@@ -27,7 +46,7 @@ def save_bank_bhc_links(df, save_links_path):
     links.to_csv(save_links_path)
 
 
-def aggregate_to_bhc(df, savepath=None):
+def aggregate_to_bhc(df):
     # Aggregate
     df = df[df['rssdhcr'] > 0]
     df = df.groupby('rssdhcr').agg({
@@ -42,10 +61,6 @@ def aggregate_to_bhc(df, savepath=None):
     df['asset'] = df['asset'] * 1000 / 1e9
     df['branch_density'] = df['nbranch'] / df['depsum']
     df.index.name = 'rssdid'
-
-    if savepath is not None:
-        df.to_csv(savepath)
-
     return df
 
 
@@ -63,8 +78,10 @@ def aggregate_to_bank(df, savepath=None):
     df['asset'] = df['asset'] * 1000 / 1e9
     df['branch_density'] = df['nbranch'] / df['depsum']
     df.index.name = 'rssdid'
-
-    if savepath is not None:
-        df.to_csv(savepath)
-
     return df
+
+
+if __name__ == "__main__":
+    (sod_bhc_2022_df, sod_bank_2022_df) = sod_main(2022)
+    # sod_bhc_2022_df.to_csv("temp/sod_bhc_level_{year}.csv")
+    # sod_bank_2022_df.to_csv("temp/sod_bank_level_{year}.csv")

@@ -230,6 +230,7 @@ def bank_lines_histogram():
 
     return data
 
+
 if __name__ == "__main__":
     etf_path = "data/bank_and_sp500_returns_501.csv"
     eventnum = 'all'

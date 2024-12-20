@@ -1,6 +1,7 @@
 
 
-/* Aggregate corelogic lending, by lender, to multiple frequencies
+/*
+	Aggregate corelogic lending, by lender, to multiple frequencies
 	NOTE: Set up to match on RSSDID so any institutions without
 	this indicator, or for which there is no match in crosswalk, will not show
 	up in final dataset
