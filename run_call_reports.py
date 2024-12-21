@@ -7,6 +7,74 @@ import io
 import os
 
 
+def call_reports_main(dates, bhck, test_run):
+    # Collect call reports
+    qtables = list()
+
+    # Create a string that will serve as our simulated input
+    test_input = "blivingston\n\nn\n"
+
+    # Redirect stdin to read from the string
+    sys.stdin = io.StringIO(test_input)
+
+    # Create Query instance
+    cr_query = call_reports.Query('blivingston', bhck=bhck)
+
+    # Select variables
+    cr_query.select_variables(variables(bhck).keys())
+    if test_run:
+        cr_query.n_test_data = 100
+
+    for date in dates:
+        dq = get_quarter(cr_query, date, bhck=bhck, test_run=test_run)
+        qtables.append(dq)
+
+    df = pd.concat(qtables)
+    df = call_reports.account_for_different_ffiec_forms(df)
+
+    # Merge in mark-to-market losses
+    mtm_losses = mtm.compute_losses(df)
+    df = df.merge(mtm_losses, how='left', left_on='rssdid', right_on='rssdid')
+
+    # Clean
+    df = clean(df)
+    return df
+
+
+def get_quarter(cr_query, date, bhck=False, test_run=False):
+    df = cr_query.query(date)
+    new_var_names = variables(bhck)
+    new_var_names.update({
+        'rssd9001': 'rssdid',
+        'rssd9999': 'date',
+        'rssd9017': 'name'
+    })
+    df = df.rename(columns=new_var_names)
+
+    if bhck:
+        data_quarter = df.drop('rssdid', axis=1)
+    else:
+        attr_files = ['data/NIC_attributes_closed.csv', 'data/NIC_attributes_active.csv']
+        bhcids = call_reports.assign_topid_up(df, 'data/NIC_relationships.csv', attr_files, date)
+        bhcids = bhcids.set_index('rssdid')
+        data_quarter = df.drop('rssdid', axis=1).merge(
+            bhcids, how='left', left_index=True, right_index=True)
+    return data_quarter
+
+
+def clean(df):
+    # Drop repricing variables
+    prefixes = ['gsec', 'flien', 'famsec', 'othll']
+    repricing_vars = startswith_anyof(df.columns.tolist(), prefixes)
+    df = df.drop(repricing_vars, axis=1)
+    df = df.drop([k for k in df.columns.tolist() if k.startswith('rmbs_')], axis=1)
+
+    # Note mergers/acquisitions
+    fpath = 'data/NIC_transformations.csv'
+    df = call_reports.account_for_ma(df, fpath)
+    return df
+
+
 def variables(bhck=False):
 
     # Variable always shows up with RCON prefix (or this is the version we want)
@@ -150,40 +218,6 @@ def variables(bhck=False):
     return all_vars
 
 
-def get_quarter(date, bhck=False, filepath=""):
-    if filepath:
-        df = pd.read_csv(fpath, header=0, index_col='rssdid')
-    else:
-        # Create a string that will serve as our simulated input
-        test_input = "blivingston\n\nn\n"
-
-        # Redirect stdin to read from the string
-        sys.stdin = io.StringIO(test_input)
-        cr_query = call_reports.Query('blivingston', bhck=bhck)
-
-        # Select variables
-        vars = variables(bhck)
-        cr_query.select_variables(vars.keys())
-
-        df = cr_query.query(date)
-        vars.update({
-            'rssd9001': 'rssdid',
-            'rssd9999': 'date',
-            'rssd9017': 'name'
-        })
-        df = df.rename(columns=vars)
-
-    if bhck:
-        data_quarter = df.drop('rssdid', axis=1)
-    else:
-        attr_files = ['data/NIC_attributes_closed.csv', 'data/NIC_attributes_active.csv']
-        bhcids = call_reports.assign_topid_up(df, 'data/NIC_relationships.csv', attr_files, date)
-        bhcids = bhcids.set_index('rssdid')
-        data_quarter = df.drop('rssdid', axis=1).merge(
-            bhcids, how='left', left_index=True, right_index=True)
-    return data_quarter
-
-
 def startswith_anyof(variables, prefixes):
     vars_found = []
     for pre in prefixes:
@@ -193,52 +227,28 @@ def startswith_anyof(variables, prefixes):
 
 
 if __name__ == "__main__":
-    # Generate test data
-    gen_test_data = False
-    test_data_path = 'temp/test_data'
+    # Generate test data, NOT FUNCTIONAL YET
+    # Should just put limit in query?
+    test_run = True
 
-    # Select quarters
+    # List of dates of integer form YYYYMMDD
     quarters = [331, 630, 930, 1231]
     years = [2018, 2019, 2020, 2021, 2022, 2023]
     dates = [int(y * 1e4) + q for y in years for q in quarters]
     dates.pop()
 
-    # BHCK data?
     bhck = False
+    df_final = call_reports_main(dates, bhck, test_run)
 
-    # Collect call reports
-    qtables = list()
-    for date in dates:
-        dq = get_quarter(date, bhck=bhck)
-        qtables.append(dq)
+    if not test_run:
+        fpath = 'temp'
+        if not os.path.exists(fpath):
+            os.makedirs(fpath)
 
-    df = pd.concat(qtables)
-    if gen_test_data:
-        test_call_fpath = os.path.join(test_data_path, 'post_get_quarter.csv')
-        df.to_csv(test_call_fpath)
-
-    df = call_reports.account_for_different_ffiec_forms(df)
-    losses = mtm.compute_losses(df)
-    df = df.merge(losses, how='left', left_on='rssdid', right_on='rssdid')
-
-    # Drop repricing variables
-    prefixes = ['gsec', 'flien', 'famsec', 'othll']
-    repricing_vars = startswith_anyof(df.columns.tolist(), prefixes)
-    df = df.drop(repricing_vars, axis=1)
-    df = df.drop([k for k in df.columns.tolist() if k.startswith('rmbs_')], axis=1)
-
-    # Mergers/acquisitions
-    fpath = 'data/NIC_transformations.csv'
-    df = call_reports.account_for_ma(df, fpath)
-
-    fpath = 'temp'
-    if not os.path.exists(fpath):
-        os.makedirs(fpath)
-
-    if bhck:
-        pathname = 'bhck_data_cleaned.csv'
-    else:
-        pathname = 'bank_data_cleaned.csv'
-    df.to_csv(os.path.join('temp', pathname))
+        if bhck:
+            pathname = 'bhck_data_cleaned.csv'
+        else:
+            pathname = 'bank_data_cleaned.csv'
+        df_final.to_csv(os.path.join('temp', pathname))
 
 

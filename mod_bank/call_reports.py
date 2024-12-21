@@ -6,12 +6,12 @@ Created on Fri Jul 26 11:53:35 2024
 
 @author: brianlivingston
 """
-import itertools
 import re
 import pandas as pd
 import numpy as np
 import wrds
-from mod_aux import functions
+from mod_bank import functions
+
 
 class Query(object):
     uname = 'blivingston'
@@ -69,40 +69,36 @@ class Query(object):
         else:
             common_vars = ['rssd9999', 'rssd9017', 'rssdfininstfilingtype']
 
+            # Limit dataset
+            if self.n_test_data > 0:
+                nsample = self.n_test_data
+
         # Query each table separately
         all_queries = list()
+        have_common_variables = False
         for table_name in self.tabnames:
             variables = self.variables_by_table[table_name]
             if len(variables) == 0:
                 continue
 
-            # Limit dataset
-            if self.gen_test_data:
-                nsample = self.n_test_data
-            else:
-                nsample = -1
-
             # Query selected table
-            query_this_table = query_one_table(
+            this_table = query_one_table(
                 self.conn, table_name, variables, date, nsample)
-            query_this_table = query_this_table.set_index('rssd9001', drop=True)
-            query_this_table.index.name = 'rssdid'
+            this_table = this_table.set_index('rssd9001', drop=True)
+            this_table.index.name = 'rssdid'
 
-            # Save observation date and names for later, same across loop iterations
-            dates_names = query_this_table[common_vars]
-            query_this_table = query_this_table.drop(common_vars, axis=1)
+            # Keep observation date and names only from first table (all same)
+            if have_common_variables:
+                this_table = this_table.drop(common_vars, axis=1)
+            else:
+                have_common_variables = True
 
             # Store results
-            all_queries.append(query_this_table)
+            all_queries.append(this_table)
 
-        # Concatenate query results from all tables
-        df_out = pd.concat(all_queries, axis=1, join='outer')
-
-        # Add back date, state, and institution names
-        colnames = df_out.columns.tolist()
-        df_out[common_vars] = dates_names
+        # Concatenate query results from all table
+        df_out = pd.concat(all_queries, axis=1, join='outer', verify_integrity=True)
         df_out['rssd9001'] = df_out.index.values
-        df_out = df_out[['rssd9001'] + common_vars + colnames]
         return df_out
 
 
@@ -246,10 +242,6 @@ def move_up(links_table, child):
             return -2
 
 
-def strip_prefixed(variables, prefix):
-    return [s.split(prefix)[1] for s in variables]
-
-
 def account_for_different_ffiec_forms(df):
     df = df.rename(columns={'rssdfininstfilingtype': 'form'})
     column_names = df.columns.tolist()
@@ -302,3 +294,7 @@ def account_for_ma(df, fpath):
     df = df.drop(sel_idx, axis=1)
 
     return df
+
+
+def strip_prefixed(variables, prefix):
+    return [s.split(prefix)[1] for s in variables]
