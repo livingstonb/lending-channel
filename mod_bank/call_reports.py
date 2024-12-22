@@ -69,10 +69,6 @@ class Query(object):
         else:
             common_vars = ['rssd9999', 'rssd9017', 'rssdfininstfilingtype']
 
-            # Limit dataset
-            if self.n_test_data > 0:
-                nsample = self.n_test_data
-
         # Query each table separately
         all_queries = list()
         have_common_variables = False
@@ -83,7 +79,7 @@ class Query(object):
 
             # Query selected table
             this_table = query_one_table(
-                self.conn, table_name, variables, date, nsample)
+                self.conn, table_name, variables, date, self.n_test_data)
             this_table = this_table.set_index('rssd9001', drop=True)
             this_table.index.name = 'rssdid'
 
@@ -243,26 +239,59 @@ def move_up(links_table, child):
 
 
 def account_for_different_ffiec_forms(df):
+    """
+    Bank variables for banks filing 031 forms vs 041 forms have different
+    variable naming in some cases. This code harmonizes the two different
+    variables into just one, using values from the 031 value for 031 filers
+    and the 041 value for 041 filers. Note it may be the case that 031 filers
+    report different values for the rcon- and rcfd-prefixed variables in which case
+    we make the judgment call to use the 031-associated rcfd-prefixed variables
+
+    Parameters
+    ----------
+    df: DataFrame
+
+    Returns
+    -------
+    DataFrame
+
+    """
     df = df.rename(columns={'rssdfininstfilingtype': 'form'})
     column_names = df.columns.tolist()
 
-    # Variables designated with rcon prefix
+    # Strip 'rcon' prefix for all variables starting wtih 'rcon'
     rcon_list = [s for s in column_names if s.startswith('rcon_')]
     rcon_names = strip_prefixed(rcon_list, 'rcon_')
     df = df.rename(columns={k: v for k, v in zip(rcon_list, rcon_names)})
 
-    # Replace values with RCFD for 031 filers
+    # For 031 filers, replace values of the newly renamed variables
+    # with values of the 'rcfd'-prefixed variables of the same variable number
     rcfd_list = [s for s in column_names if s.startswith('rcfd_')]
     rcfd_names = strip_prefixed(rcfd_list, 'rcfd_')
     for name in rcon_names:
         if name in rcfd_names:
             df[name] = df[name].mask(df.form == '031', df['rcfd_'+name])
+            # Now column with 'rcfd' prefix contains missings or is redundant
             df = df.drop('rcfd_'+name, axis=1)
 
     return df
 
 
 def account_for_ma(df, fpath):
+    """
+    Adds columns to DataFrame that identify bank corporate events such as merges.
+    Requires FFIEC transformations data from NIC, located in fpath.
+
+    Parameters
+    ----------
+    df: dataframe that columns will be added to
+    fpath: path of NIC transformations file
+
+    Returns
+    -------
+    DataFrame
+
+    """
     transf = pd.read_csv(fpath)
     vars = transf.columns.tolist()
     transf = transf.rename(columns={n: n.lower() for n in vars})
@@ -297,4 +326,18 @@ def account_for_ma(df, fpath):
 
 
 def strip_prefixed(variables, prefix):
+    """
+    Returns list of variable names excluding the prefixes, e.g. strip_prefixed(['rcon_abcd'], 'rcon_'])
+    returns ['abcd'].
+
+    Parameters
+    ----------
+    variables: list of strings
+    prefix: string
+
+    Returns
+    -------
+    list of strings
+
+    """
     return [s.split(prefix)[1] for s in variables]

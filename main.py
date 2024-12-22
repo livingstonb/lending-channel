@@ -18,6 +18,7 @@ sod_bhc_df.to_csv(f"temp/sod_bhc_level_{year}.csv")
 sod_bank_df.to_csv(f"temp/sod_bank_level_{year}.csv")
 
 ### CALL REPORTS ###
+# Requires CRSP-FRB crosswalk saved as 'data/bank_crsp_links.csv'
 # List of dates of integer form YYYYMMDD
 quarters = [331, 630, 930, 1231]
 years = [2018, 2019, 2020, 2021, 2022, 2023]

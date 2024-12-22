@@ -1,4 +1,8 @@
-
+"""
+Uses call_reports functions to retrieve and clean bank data.
+Requires FFIEC data from NIC (https://www.ffiec.gov/npw/FinancialReport/DataDownload)
+saved as 'data/NIC_<******>.csv'. See code below for references.
+"""
 import pandas as pd
 from mod_bank import call_reports
 from mod_bank import mark_to_market as mtm
@@ -42,6 +46,21 @@ def call_reports_main(dates, bhck, test_run):
 
 
 def get_quarter(cr_query, date, bhck=False, test_run=False):
+    """
+    Queries call reports data for the quarter specified in 'date'.
+
+    Parameters
+    ----------
+    cr_query: Query object which contains WRDS connection object and methods
+    date: Integer YYYYMMDD as ending date of quarter
+    bhck: Bool; true indicates query is for bhc-level tables
+    test_run: Bool; true indicates to limit query to small number
+
+    Returns
+    -------
+    DataFrame
+
+    """
     df = cr_query.query(date)
     new_var_names = variables(bhck)
     new_var_names.update({
@@ -76,8 +95,23 @@ def clean(df):
 
 
 def variables(bhck=False):
+    """
+    Creates a dictionary with keys that determine which variables are
+    queried and associated values for new variable names.
 
-    # Variable always shows up with RCON prefix (or this is the version we want)
+    Parameters
+    ----------
+    bhck: Bool; true is for bank-level query, false is for bhc-level
+
+    Returns
+    -------
+    dictionary of form {FFIEC variable name: new name}
+
+    """
+
+    # List variables that always show up with RCON prefix in forms,
+    # or that also show up with other prefixes but we want RCON
+    # variant of the variable.
     vars_rcon = {
         '9224': 'lei',
         '5597': 'est_unins_deposits',
@@ -117,6 +151,7 @@ def variables(bhck=False):
         '2122': 'tot_loansleases',
         '2123': 'unearnedinc_loansleases',
     }
+    # Append 'rcon' to dict keys to match FFIEC variable names
     all_vars = {'rcon'+k: v for k, v in vars_rcon.items()}
 
     # Variable has RCON prefix for 041 filers, RCFD for 031 filers
@@ -178,11 +213,12 @@ def variables(bhck=False):
         'j457': 'unused_comm_ci',
         'j458': 'unused_comm_nbfi',
     }
-
+    # Add to dict both 'rcon' and 'rcfd' prefixes of all these variables
     for prefix in ['rcon', 'rcfd']:
         all_vars.update(
             {prefix+key: '_'.join((prefix, val)) for key, val in vars_rcon_rcfd.items()})
 
+    # RCOA variables (capital ratios etc)
     other = {
         'rcoa7206': 'rcoa_tier1cap',
         'rcfa7206': 'rcfa_tier1cap',
@@ -197,6 +233,7 @@ def variables(bhck=False):
     all_vars.update(other)
 
     if bhck:
+        # BHC-specific
         all_vars = {
             'bhckjj34': 'htm_securities',
             'bhck1773': 'afs_debt_securities',
@@ -219,6 +256,20 @@ def variables(bhck=False):
 
 
 def startswith_anyof(variables, prefixes):
+    """
+    From a list of strings, return a list which contains the subset of original list
+    elements that start with any of the substrings found in 'prefixes'.
+
+    Parameters
+    ----------
+    variables: List of strings, variable names with prefixes such as 'rcon' or 'rcfd'
+    prefixes: List of strings with FFIEC variable prefixes
+
+    Returns
+    -------
+    List of strings
+
+    """
     vars_found = []
     for pre in prefixes:
         vars_found += [v for v in variables if v.startswith(pre)]
@@ -229,7 +280,7 @@ def startswith_anyof(variables, prefixes):
 if __name__ == "__main__":
     # Generate test data, NOT FUNCTIONAL YET
     # Should just put limit in query?
-    test_run = True
+    test_run = False
 
     # List of dates of integer form YYYYMMDD
     quarters = [331, 630, 930, 1231]
