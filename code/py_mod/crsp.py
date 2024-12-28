@@ -56,7 +56,7 @@ def query_wrds(conn, dates):
     """
 
     # Crosswalk between bank rssdids and crsp permco values
-    links = get_bank_permco_links('data/bank_crsp_links.csv',
+    links = get_bank_permco_links('../data/bank_crsp_links.csv',
                                   pd.to_datetime(dates))
     # Convert to comma-separated string
     permco_str = ', '.join([str(s) for s in set(links['permco'].values)])
@@ -154,4 +154,4 @@ def concatenate(datasets):
 if __name__ == "__main__":
 
     df = crsp_main()
-    df.to_csv('temp/crsp_daily_cleaned.csv')
+    df.to_csv('../temp/crsp_daily_cleaned.csv')

@@ -1,4 +1,8 @@
 
+### UNUSED & BROKEN,  PROBABLY NEEDS TO BE DELETED
+
+
+
 # TODO: merge in table of closed banks
 # TODO: use ID_RSSD_HD_OFF to merge lower-branch attributes with headquarters if HQ doesn't show up?
 # TODO: move on to routine that computes ownership
@@ -9,8 +13,8 @@ import pandas as pd
 def merge_nic_tables(date):
 
     tables = {
-        'attributes': 'data/NIC_attributes_active.csv',
-        'relationships': 'data/NIC_relationships.csv'
+        'attributes': '../data/NIC_attributes_active.csv',
+        'relationships': '../data/NIC_relationships.csv'
     }
     nic_dfs = dict()
     for k, v in tables.items():

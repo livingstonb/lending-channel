@@ -4,8 +4,8 @@ Requires FFIEC data from NIC (https://www.ffiec.gov/npw/FinancialReport/DataDown
 saved as 'data/NIC_<******>.csv'. See code below for references.
 """
 import pandas as pd
-from mod_bank import call_reports
-from mod_bank import mark_to_market as mtm
+from py_mod import call_reports
+from py_mod import mark_to_market as mtm
 import sys
 import io
 import os
@@ -73,8 +73,8 @@ def get_quarter(cr_query, date, bhck=False, test_run=False):
     if bhck:
         data_quarter = df.drop('rssdid', axis=1)
     else:
-        attr_files = ['data/NIC_attributes_closed.csv', 'data/NIC_attributes_active.csv']
-        bhcids = call_reports.assign_topid_up(df, 'data/NIC_relationships.csv', attr_files, date)
+        attr_files = ['../data/NIC_attributes_closed.csv', '../data/NIC_attributes_active.csv']
+        bhcids = call_reports.assign_topid_up(df, '../data/NIC_relationships.csv', attr_files, date)
         bhcids = bhcids.set_index('rssdid')
         data_quarter = df.drop('rssdid', axis=1).merge(
             bhcids, how='left', left_index=True, right_index=True)
@@ -89,7 +89,7 @@ def clean(df):
     df = df.drop([k for k in df.columns.tolist() if k.startswith('rmbs_')], axis=1)
 
     # Note mergers/acquisitions
-    fpath = 'data/NIC_transformations.csv'
+    fpath = '../data/NIC_transformations.csv'
     df = call_reports.account_for_ma(df, fpath)
     return df
 
@@ -299,7 +299,7 @@ if __name__ == "__main__":
         if bhck:
             pathname = 'bhck_data_cleaned.csv'
         else:
-            pathname = 'bank_data_cleaned.csv'
-        df_final.to_csv(os.path.join('temp', pathname))
+            pathname = '../bank_data_cleaned.csv'
+        df_final.to_csv(os.path.join('../temp', pathname))
 
 

@@ -12,8 +12,8 @@ import numpy as np
 
 
 def sod_main(year):
-    sod_filepath = f"data/sod_06_{year}.csv"
-    links_savepath = f"temp/sod_bank_bhc_links_{year}.csv"
+    sod_filepath = f"../data/sod_06_{year}.csv"
+    links_savepath = f"../temp/sod_bank_bhc_links_{year}.csv"
     df = read(sod_filepath, save_links_path=links_savepath)
 
     df_bhc = aggregate_to_bhc(df)

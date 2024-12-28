@@ -10,7 +10,7 @@ import re
 import pandas as pd
 import numpy as np
 import wrds
-from mod_bank import functions
+from code.mod_bank import functions
 
 
 class Query(object):
@@ -20,7 +20,7 @@ class Query(object):
     variables_by_table = dict()
     n_test_data = -1
     gen_test_data = False
-    test_data_path = 'temp/test_input'
+    test_data_path = '../temp/test_input'
 
     def __init__(self, uname, bhck=False, gen_test_data=False):
         self.conn = wrds.Connection(username=uname)

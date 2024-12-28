@@ -4,9 +4,9 @@ from pandas.tseries.offsets import DateOffset
 
 
 class MTMConfig:
-    treas_index_fpath = 'data/sp_treasury_indexes.csv'
-    ishares_etf_fpath = 'data/ishares_etfs.csv'
-    sp_treasury_index_fpath = 'data/sp_treasury_bond_index.csv'
+    treas_index_fpath = '../data/sp_treasury_indexes.csv'
+    ishares_etf_fpath = '../data/ishares_etfs.csv'
+    sp_treasury_index_fpath = '../data/sp_treasury_bond_index.csv'
     end_date = pd.to_datetime("2022-12-31") # 2022-12-31
 
 

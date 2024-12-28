@@ -1,5 +1,5 @@
+from code.mod_bank import call_reports
 
-from mod_bank import call_reports
 
 def assign_topid_up(df):
     date = 20221231

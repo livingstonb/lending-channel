@@ -10,7 +10,7 @@ def fredkey():
     return '304287798bfe06df71176401cb843da6'
 
 def event_stock_returns(fpath, eventnum):
-    stocks = pd.read_csv("data/bank_and_sp500_returns_501.csv")
+    stocks = pd.read_csv("../data/bank_and_sp500_returns_501.csv")
     stocks.loc[stocks.dividend.isnull(), 'dividend'] = 0
     stocks.price += stocks.dividend
     stocks = stocks[['date', 'ticker', 'price']]
@@ -232,7 +232,7 @@ def bank_lines_histogram():
 
 
 if __name__ == "__main__":
-    etf_path = "data/bank_and_sp500_returns_501.csv"
+    etf_path = "../data/bank_and_sp500_returns_501.csv"
     eventnum = 'all'
     # stocks = event_stock_returns(etf_path, eventnum)
 
