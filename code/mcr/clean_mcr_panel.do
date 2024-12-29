@@ -1,8 +1,27 @@
-
+/*
+	Cleans raw MCR panel, excluding WLOCs except for aggregated usage statistics
+	across lines. Saves to firm-quarter level.
+	
+	Requires aggregated HMDA data and Avery crosswalk, but this can be changed.
+	Also, see NOTE below.
+*/
 
 #delimit ;
 
-/* Read in WLOC, will be aggregated */
+/* NOTE: MUST FIRST USE CODE BELOW AT LEAST ONCE TO SAVE MCR PANEL AS dta!!!
+	Just saves time in the future because xlsx with duplicates is very costly
+	to read.
+
+	#delimit ;
+	import excel using "${datadir}/mcr_panel.xlsx", clear firstrow;
+	duplicates drop firm quarter, force;
+
+	save "${tempdir}/mcr/mcr_panel.dta", replace;
+*/
+
+
+
+/* Aggregate WLOC borrowings (across lines) to nonbank-quarter level */
 import excel using "${datadir}/mcr/wloc_data.xlsx", clear firstrow;
 
 replace available = . if (usage < 0) | (usage > limit);
@@ -25,15 +44,6 @@ tempfile wlocs;
 save "`wlocs'", replace;
 
 
-/* Code to save MCR panel as stata, after dropping duplicates, not necessary
-	to re-run multiple times.
-
-	#delimit ;
-	import excel using "${datadir}/mcr_panel.xlsx", clear firstrow;
-	duplicates drop firm quarter, force;
-
-	save "${tempdir}/mcr/mcr_panel.dta", replace;
-*/
 use "${tempdir}/mcr_panel.dta", clear;
 merge 1:1 firm quarter using "`wlocs'", keep(1 3);
 
@@ -45,15 +55,6 @@ merge 1:1 firm quarter using "`wlocs'", keep(1 3);
 	gen quarter = qofd(date);
 	format %tq quarter;
 	rename quarter qdate;
-
-	gen q4_2023 = (date == mdy(10, 1, 2023));
-	gen q3_2023 = (date == mdy(7, 1, 2023));
-	gen q2_2023 = (date == mdy(4, 1, 2023));
-	gen q1_2023 = (date == mdy(1, 1, 2023));
-	gen q4_2022 = (date == mdy(10, 1, 2022));
-	gen q2_2022 = (date == mdy(4, 1, 2022));
-	gen q3_2019 = (date == mdy(10, 1, 2019));
-
 /*
 Merge with with HMDA-LEI crosswalk, Avery, and aggregated annual public
 HMDA from earlier.
@@ -122,10 +123,10 @@ HMDA from earlier.
 	gen liquidassets = unrestr_cash + sec_afs + sec_trading;
 	gen leverage = equity / assets;
 
-/* Save */
-	save "${tempdir}/mcr_cleaned.dta", replace;
+/* Save final mcr panel */
+	save "${outdir}/final_mcr_panel.dta", replace;
 
-/* Save unique names for IMBs */
+/* Save unique names for IMBs (for reference) */
 	preserve;
 	keep if (imb == 1);
 
@@ -135,13 +136,15 @@ HMDA from earlier.
 
 	
 	
+
 assert 1 == 0;
-/* CODE BELOW NEEDS TO BE CLEANED... */
+/*
+	CODE BELOW IS UNUSED. May be informative when we go back to our issue of
+	measurement error in warehouse line reporting. Recall: some look off by
+	factor of 1000, some look off by arbitrary factor.
+*/
 
 
-
-/* Balance sheet shares */
-/* Read in WLOC */
 #delimit 
 import excel using "${datadir}/mcr/wloc_data.xlsx", clear firstrow;
 
@@ -166,7 +169,7 @@ tempfile wlocs;
 save "`wlocs'", replace;
 
 /* */ #delimit ;
-use "${tempdir}/mcr_cleaned.dta", clear;
+use "${outdir}/final_mcr_panel.dta", clear;
 keep if (type22 == 40);
 
 drop usage limit available;
@@ -193,42 +196,3 @@ foreach var of local to_scale {;
 drop if inrange(share_wloc_facilities, 2, 900);
 drop if share_wloc_facilities > 1100;
 replace usage = bal_debt_fac if inrange(share_wloc_facilities, 1.001, 2);
-
-replace share_wloc_facilities = usage / bal_debt_fac;
-
-gen other_st_liab = liab - usage - lt_liab;
-gen wloc_liab = usage;
-
-#delimit ;
-collapse (sum) wloc_liab assets other_st_liab lt_liab equity unrestr_cash
-	liab bal_debt_fac current_liab payables_to_related
-	total_gross_income warehousing_int liquidassets limit
-	pretax_noi (p50) med_equity=equity med_liquid=liquidassets, by(qdate);
-
-gen share_cash = unrestr_cash / assets;
-gen share_liquid = liquidassets / assets;
-
-gen share_wloc = wloc_liab / assets;
-gen share_st_debt = other_st_liab / assets;
-gen share_lt_debt = lt_liab / assets;
-gen share_equity = equity / assets;
-
-
-gen z0 = wloc_liab / assets;
-gen z1 = bal_debt_fac  / assets;
-gen z2 = (current_liab - bal_debt_fac) / assets;
-gen z3 = (current_liab + lt_liab) / assets;
-gen z4 = z3 + equity / assets;
-
-gen payables_related_share = payables_to_related / assets;
-
-gen warehouseintshare = warehousing_int / total_gross_income;
-
-/* REMAKE TIM PLOT, but with:
-	(1) check if external ST notes large and worth including. Include CP with it.
-		Proxy for ST bank loans.
-	(2) check if oth_lt_payables_to_unrelated worth incl as proxy for LT bank loans
-	(3)
-*/
-
-twoway (line z1 qdate) (line z2 qdate) (line z3 qdate) (line z4 qdate);

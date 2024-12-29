@@ -22,7 +22,7 @@ use "${tempdir}/wloc_panel_cleaned.dta", clear;
 	replace wloc_l_total_usage = . if count_usage == 0;
 
 /* Merge with cleaned call reports data */
-	merge 1:m rssdid qdate using "${outdir}/cleaned_bank_data.dta",
+	merge 1:m rssdid qdate using "${outdir}/final_bank_panel.dta",
 		nogen keep(1 3);
 	
 	keep if bhclevel == 1;

@@ -80,7 +80,3 @@
 
 /* Save */
 	save "${tempdir}/wloc_panel_cleaned.dta", replace;
-	
-/* Aggregate and save at nonbank level also */
-	collapse (sum) limit available usage, by(firm qdate);
-	save "${tempdir}/wloc_nonbank_level_aggregates.dta", replace;

@@ -1,3 +1,12 @@
+/*
+	This code is to be run only after main.py was run. Requires data saved by
+	main.py.
+	
+	Using CPI, HMDA, corelogic, and data obtained from python code, this code
+	successively calls other do-files to price several datasets ready for
+	final data analysis.
+*/
+
 
 /* Directories */
 global projdir "/Users/brianlivingston/Dropbox/NU/Projects/svb-shock"
@@ -17,16 +26,15 @@ do "${codedir}/clean_hmda.do" `year';
 #delimit ;
 do "${codedir}/corelogic/aggregate_corelogic_mortgages_banks.do";
 
+/***************** BANK CALL REPORTS/OTHER BANK DATA **************************/
+
 /* Call reports, bank level */
- #delimit ;
+#delimit ;
 do "${codedir}/clean_call_reports_to_bank_level.do";
 
 /* Aggregate to BHC-level */
- #delimit ;
+#delimit ;
 do "${codedir}/aggregate_bank_level_to_bhc.do";
-
-/* Aggregate Corelogic to BHC-level */
-/* do "${codedir}/aggregate_corelogic_bhc.do"; */
 
 /* Summary of deposits */
 #delimit ;
@@ -45,28 +53,30 @@ merge m:1 parentid using "${tempdir}/crsp_daily_cleaned.dta",
 	nogen keep(1 3 4) update keepusing(svbR frR);
 replace name = strtrim(name);
 
-/* Drop (for now) */
+/* Drop */
 drop parent_dt* bhc;
 drop if rssdid <= 0;
 
-/* Save */
+/* Save final bank panel data */
 cap mkdir "${outdir}";
-save "${outdir}/cleaned_bank_data.dta", replace;
+save "${outdir}/final_bank_panel.dta", replace;
 
-/* Create more bank variables for nonbank exposure measure */
-do "${codedir}/prepare_bank_for_nonbank_merge.do";
-
-/*************************/
-/* MCR */
-
+/***************** MCR ********************************************************/
+/*
+	Cleans raw MCR data, using WLOCs only to create variables firm-quarter
+	aggregates (this is not at firm-wloc-quarter level).
+	Saves final panel dataset.
+*/
 do "${codedir}/mcr/clean_mcr_panel.do";
+
+/* Creates panel of credit lines at wloc-quarter level */
 do "${codedir}/mcr/clean_wloc.do";
 
+/* Aggregation of pre-shock wloc data (and other bank exposure variables) */
 use "${tempdir}/wloc_panel_cleaned.dta", clear;
-
 do "${codedir}/mcr/save_wloc_bank_level.do";
 
 
-/*************************/
+/******************************************************************************/
 /* Combined dataset */
 do "${codedir}/combine_mcr_wloc_bank.do";

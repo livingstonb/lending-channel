@@ -69,7 +69,7 @@ clear
 
 /* Merge MCR panel */
 	#delimit ;
-	use "${tempdir}/mcr_cleaned.dta", clear;
+	use "${outdir}/final_mcr_panel.dta", clear;
 	merge m:1 firm using "`wlocs'", keep(1 3) nogen;
 	keep if (type22 == 40);
 

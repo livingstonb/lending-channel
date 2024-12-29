@@ -1,3 +1,12 @@
+/*
+	Further cleans call reports data, merges in some missing LEIs, and
+	merges in 2022 HMDA data created earlier. Then saves cleaned data as dta.
+
+	Requires call reports data in csv format, obtained with a WRDS query and
+	cleaned (all in python code). Also req
+*/
+
+
 clear
 
 /* Preparation for adding missing LEIs */
@@ -10,6 +19,7 @@ clear
 	save "`missing_leis'", replace;
 
 /* Now import bank data */
+	#delimit ;
 	import delimited using "${tempdir}/bank_data_cleaned.csv", clear;
 
 	gen ddate = date(date, "YMD");
