@@ -69,14 +69,19 @@ save "${outdir}/final_bank_panel.dta", replace;
 */
 do "${codedir}/mcr/clean_mcr_panel.do";
 
-/* Creates panel of credit lines at wloc-quarter level */
-do "${codedir}/mcr/clean_wloc.do";
 
-/* Aggregation of pre-shock wloc data (and other bank exposure variables) */
+/*
+	First create panel of credit lines at wloc-quarter level.
+	
+	Then aggregation of pre-shock wloc data (and other bank exposure variables).
+	From "final_bank_panel.dta", generates "wloc_bank_level_aggregates.dta"
+	which now has WLOC variables that have been aggregated across banks.
+*/
+do "${codedir}/mcr/clean_wloc.do";
 use "${tempdir}/wloc_panel_cleaned.dta", clear;
 do "${codedir}/mcr/save_wloc_bank_level.do";
 
 
 /******************************************************************************/
 /* Combined dataset */
-do "${codedir}/combine_mcr_wloc_bank.do";
+/* do "${codedir}/combine_mcr_wloc_bank.do"; */
