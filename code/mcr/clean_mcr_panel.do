@@ -136,7 +136,7 @@ HMDA from earlier.
 
 	
 	
-
+/*
 assert 1 == 0;
 /*
 	CODE BELOW IS UNUSED. May be informative when we go back to our issue of
@@ -196,3 +196,4 @@ foreach var of local to_scale {;
 drop if inrange(share_wloc_facilities, 2, 900);
 drop if share_wloc_facilities > 1100;
 replace usage = bal_debt_fac if inrange(share_wloc_facilities, 1.001, 2);
+*/

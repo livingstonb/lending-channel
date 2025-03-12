@@ -11,7 +11,7 @@
 /* Directories */
 global projdir "/Users/brianlivingston/Dropbox/NU/Projects/svb-shock"
 // global projdir "D:\Dropbox\NU\Projects\svb-shock"
-include "${codedir}/stata_header.doh"
+include "${projdir}/code/stata_header.doh"
 
 /* Clean CPI */
 #delimit ;

@@ -1,4 +1,4 @@
-args year;
+args year
 
 /*
 	Aggregates public HMDA data by lender for selected year.

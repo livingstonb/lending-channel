@@ -86,6 +86,6 @@ use "${tempdir}/wloc_panel_cleaned.dta", clear;
 	replace high_svbR_hat = . if (included != 1);
 	
 /* Save */
-	keep if qdate == yq(2022, 4);
+	/* keep if qdate == yq(2022, 4); */
 	save "${outdir}/wloc_bank_level_aggregates.dta", replace;
 	
