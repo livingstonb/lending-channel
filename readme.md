@@ -26,7 +26,7 @@ The file *main.py* is a good reference to see how each of the python modules are
 2. Queries WRDS and produces the file *temp/crsp_daily_cleaned.csv*
 3. To identify the CRSP identifiers attached to the bank (stocks) in our sample we use the CRSP-FRB link provided by the New York Fed: https://www.newyorkfed.org/research/banking_research/crsp-frb.
 
-## LEI-NMLS crosswalk (HMDA-MCR)
+### LEI-NMLS crosswalk (HMDA-MCR)
 Our crosswalk was originally constructed by Erica Jiang. We've used her work with permission and manually matched LEI-NMLS identifiers for additional nonbank lenders.
 The file *data/hmda_lei_nmls_crosswalk.dta* is our most up-to-date crosswalk we use for matching, and our added matches can be identified in the separate file *data/erica_cwalk_updates.xlsx*.
 
