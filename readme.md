@@ -12,14 +12,23 @@ The file *main.py* is a good reference to see how each of the python modules are
 2. Code at the bottom of *code/call_reports_main.py* selects which quarters to query and whether to query the bank tables or BHC tables (BHC option is likely broken). Data issue with 2023Q4 because of banks reporting multiple times
 3. The rest of the code in *code/call_reports_main.py* selects variables, calls the query code, and calls code to add variables for 2022 mark-to-market losses
 
+### NIC Data
+1. Used to identify bank ownership structure
+2. Contains bank attribute variables
+
 ### Summary of Deposits (FDIC)
 1. Must run *code/py_mod/sod.py* with a particular year, e.g. 2022
-2. Produces two DataFrames, one at bank-level and one at BHC-level, *temp/sod_bank_level_2022.csv* and *temp/sod_bhc_level_2022.csv*
+2. A subset of SOD years are in the data directory: *data/sod_06_YYYY.csv*
+3. Code produces two DataFrames, one at bank-level and one at BHC-level, *temp/sod_bank_level_2022.csv* and *temp/sod_bhc_level_2022.csv*
 
 ### CRSP stock prices around events
 1. File is *code/py_mod/crsp.py*
 2. Queries WRDS and produces the file *temp/crsp_daily_cleaned.csv*
+3. To identify the CRSP identifiers attached to the bank (stocks) in our sample we use the CRSP-FRB link provided by the New York Fed: https://www.newyorkfed.org/research/banking_research/crsp-frb.
 
+## LEI-NMLS crosswalk (HMDA-MCR)
+Our crosswalk was originally constructed by Erica Jiang. We've used her work with permission and manually matched LEI-NMLS identifiers for additional nonbank lenders.
+The file *data/hmda_lei_nmls_crosswalk.dta* is our most up-to-date crosswalk we use for matching, and our added matches can be identified in the separate file *data/erica_cwalk_updates.xlsx*.
 
 ## Main Stata file
 *main.do* calls additional Stata code to read and clean other datasets (including Corelogic), and then merges data.
