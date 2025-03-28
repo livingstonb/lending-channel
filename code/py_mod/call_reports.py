@@ -10,7 +10,7 @@ import re
 import pandas as pd
 import numpy as np
 import wrds
-from code.py_mod import functions
+from py_mod import functions
 
 
 class Query(object):
